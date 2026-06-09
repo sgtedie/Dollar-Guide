@@ -6,7 +6,6 @@
   <title>Dollar Guide</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* ── Variables ── */
     :root {
       --bg: #0a0f1e;
       --surface: #131929;
@@ -27,289 +26,194 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      max-width: 500px;
-      margin: 0 auto;
-      position: relative;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; max-width: 500px; margin: 0 auto;
     }
 
-    /* ── Auth ── */
-    #auth-screen {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      gap: 0;
-    }
-    .auth-icon { font-size: 48px; margin-bottom: 12px; }
-    .auth-title { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
-    .auth-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px;
-      width: 100%;
-    }
-    .toggle-row {
-      display: flex;
-      background: var(--surface2);
-      border-radius: var(--radius-sm);
-      padding: 4px;
-      margin-bottom: 22px;
-    }
-    .toggle-btn {
-      flex: 1; padding: 9px; border: none; background: transparent;
-      color: var(--muted); border-radius: 8px; font-size: 14px;
-      font-weight: 600; cursor: pointer; transition: all .15s;
-    }
-    .toggle-btn.on { background: var(--green); color: #fff; }
+    /* Auth */
+    #auth-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+    .auth-icon { margin-bottom:12px; }
+    .auth-title { font-size:28px; font-weight:800; margin-bottom:4px; }
+    .auth-sub { color:var(--muted); font-size:14px; margin-bottom:32px; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; width:100%; }
+    .toggle-row { display:flex; background:var(--surface2); border-radius:var(--radius-sm); padding:4px; margin-bottom:22px; }
+    .toggle-btn { flex:1; padding:9px; border:none; background:transparent; color:var(--muted); border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all .15s; }
+    .toggle-btn.on { background:var(--green); color:#fff; }
 
-    /* ── Form elements ── */
-    .fg { margin-bottom: 16px; }
-    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
-    input, select {
-      width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm); padding: 13px 14px; color: var(--text);
-      font-size: 15px; outline: none; transition: border-color .15s; appearance: none;
-    }
-    input:focus, select:focus { border-color: var(--green); }
-    input::placeholder { color: var(--muted); }
-    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238896b3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* Forms */
+    .fg { margin-bottom:16px; }
+    label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
+    input, select { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; color:var(--text); font-size:15px; outline:none; transition:border-color .15s; appearance:none; }
+    input:focus, select:focus { border-color:var(--green); }
+    input::placeholder { color:var(--muted); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238896b3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .input-pre-wrap { position:relative; }
+    .input-pre { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:15px; pointer-events:none; }
+    .input-pre-wrap input { padding-left:26px; }
 
-    /* ── Buttons ── */
-    .btn {
-      display: block; width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
-      font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; text-align: center;
-    }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-green:hover:not(:disabled) { background: var(--green-dark); }
-    .btn-gray { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-sm { padding: 8px 14px; width: auto; font-size: 13px; border-radius: 8px; display: inline-block; }
-    .btn-icon {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      padding: 7px; cursor: pointer; color: var(--muted); display: inline-flex;
-      align-items: center; justify-content: center; transition: all .15s;
-    }
-    .btn-icon:hover { color: var(--text); }
-    .btn-icon.del:hover { color: var(--red); background: var(--red-bg); border-color: rgba(239,68,68,.3); }
+    /* Buttons */
+    .btn { display:block; width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:15px; font-weight:700; cursor:pointer; transition:opacity .15s; text-align:center; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-green { background:var(--green); color:#fff; }
+    .btn-green:hover:not(:disabled) { background:var(--green-dark); }
+    .btn-gray { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    .btn-red { background:var(--red-bg); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+    .btn-sm { padding:8px 14px; width:auto; font-size:13px; border-radius:8px; display:inline-block; }
+    .btn-icon { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:7px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; transition:all .15s; }
+    .btn-icon:hover { color:var(--text); }
+    .btn-icon.del:hover { color:var(--red); background:var(--red-bg); border-color:rgba(239,68,68,.3); }
 
-    /* ── Alerts ── */
-    .alert { padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; }
-    .alert-error { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
-    .alert-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
-    .hidden { display: none !important; }
+    /* Alerts */
+    .alert { padding:11px 14px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
+    .alert-error { background:var(--red-bg); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+    .alert-success { background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.3); }
+    .hidden { display:none !important; }
 
-    /* ── App shell ── */
-    #app { display: none; flex-direction: column; min-height: 100vh; }
-    #app.show { display: flex; }
+    /* App shell */
+    #app { display:none; flex-direction:column; min-height:100vh; }
+    #app.show { display:flex; }
+    .app-header { background:var(--surface); border-bottom:1px solid var(--border); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:20; }
+    .header-brand { display:flex; align-items:center; gap:8px; font-size:18px; font-weight:800; }
+    .signout-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:6px 10px; border-radius:8px; font-weight:500; }
+    .signout-btn:hover { background:var(--surface2); color:var(--text); }
+    .page-content { flex:1; padding:20px; padding-bottom:100px; }
 
-    .app-header {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 20;
-    }
-    .header-title { font-size: 18px; font-weight: 800; }
-    .signout-btn {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: 13px; padding: 6px 10px; border-radius: 8px; font-weight: 500;
-    }
-    .signout-btn:hover { background: var(--surface2); color: var(--text); }
+    /* Bottom nav */
+    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:500px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 0 env(safe-area-inset-bottom,12px); z-index:20; }
+    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; cursor:pointer; border:none; background:none; color:var(--muted); font-size:11px; font-weight:600; transition:color .15s; }
+    .nav-btn.on { color:var(--green); }
+    .nav-btn svg { width:24px; height:24px; }
 
-    .page-content { flex: 1; padding: 20px; padding-bottom: 100px; overflow-y: auto; }
+    /* Pages */
+    .page { display:none; }
+    .page.on { display:block; }
 
-    /* ── Bottom Nav ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 500px; background: var(--surface);
-      border-top: 1px solid var(--border); display: flex;
-      padding: 8px 0 env(safe-area-inset-bottom, 12px); z-index: 20;
-    }
-    .nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 6px 4px; cursor: pointer; border: none; background: none;
-      color: var(--muted); font-size: 11px; font-weight: 600; transition: color .15s;
-    }
-    .nav-btn.on { color: var(--green); }
-    .nav-btn svg { width: 24px; height: 24px; }
+    /* Summary grid */
+    .sum-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
+    .sum-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+    .sum-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:7px; font-weight:600; }
+    .sum-val { font-size:24px; font-weight:800; line-height:1; }
+    .sum-sub { font-size:11px; color:var(--muted); margin-top:5px; }
+    .c-green { color:var(--green); }
+    .c-red { color:var(--red); }
+    .c-yellow { color:var(--yellow); }
 
-    /* ── Pages ── */
-    .page { display: none; }
-    .page.on { display: block; }
+    /* Section header */
+    .sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .sec-title { font-size:17px; font-weight:700; }
 
-    /* ── Summary grid ── */
-    .sum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
-    .sum-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-    .sum-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; font-weight: 600; }
-    .sum-val { font-size: 24px; font-weight: 800; line-height: 1; }
-    .sum-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
-    .c-green { color: var(--green); }
-    .c-red { color: var(--red); }
-    .c-yellow { color: var(--yellow); }
+    /* Strategy pills */
+    .strat-wrap { display:flex; gap:6px; }
+    .strat-pill { padding:6px 12px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--border); background:transparent; color:var(--muted); transition:all .15s; }
+    .strat-pill.on { background:var(--green); border-color:var(--green); color:#fff; }
 
-    /* ── Section header ── */
-    .sec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .sec-title { font-size: 17px; font-weight: 700; }
+    /* Paycheck cards */
+    .pc-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+    .pc-card.next { border-color:var(--green); }
+    .pc-header { padding:16px; display:flex; align-items:flex-start; justify-content:space-between; cursor:pointer; gap:12px; }
+    .pc-date { font-weight:700; font-size:16px; }
+    .pc-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+    .pc-right { text-align:right; flex-shrink:0; }
+    .pc-amount { font-weight:800; font-size:16px; }
+    .pc-rem { font-size:12px; margin-top:3px; font-weight:600; }
+    .pc-body { border-top:1px solid var(--border); padding:4px 16px 14px; }
+    .pc-bill-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(42,53,80,.6); font-size:14px; }
+    .pc-bill-row:last-of-type { border-bottom:none; }
+    .pc-bill-name { font-weight:600; }
+    .pc-bill-due { font-size:11px; color:var(--muted); margin-top:2px; }
+    .pc-bill-amt { font-weight:700; flex-shrink:0; }
+    .prog-wrap { margin-top:10px; }
+    .prog-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:5px; }
+    .prog-bg { height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+    .prog-fill { height:100%; border-radius:99px; background:var(--green); }
+    .prog-fill.over { background:var(--red); }
+    .over-msg { font-size:11px; color:var(--red); margin-top:5px; }
 
-    /* ── Strategy pills ── */
-    .strat-wrap { display: flex; gap: 6px; }
-    .strat-pill {
-      padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
-      cursor: pointer; border: 1.5px solid var(--border); background: transparent; color: var(--muted);
-      transition: all .15s;
-    }
-    .strat-pill.on { background: var(--green); border-color: var(--green); color: #fff; }
+    /* Chips */
+    .chip { display:inline-flex; align-items:center; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:700; margin-bottom:5px; }
+    .chip-next { background:var(--green-bg); color:var(--green); }
+    .chip-past { background:var(--surface2); color:var(--muted); }
+    .chip-paid { background:var(--green-bg); color:var(--green); font-size:10px; padding:2px 7px; margin-left:6px; }
+    .chip-job { background:var(--surface2); color:var(--muted); font-size:10px; padding:2px 7px; margin-left:6px; }
 
-    /* ── Paycheck cards ── */
-    .pc-card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
-    }
-    .pc-card.next { border-color: var(--green); }
-    .pc-header {
-      padding: 16px; display: flex; align-items: flex-start;
-      justify-content: space-between; cursor: pointer; gap: 12px;
-    }
-    .pc-date { font-weight: 700; font-size: 16px; }
-    .pc-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .pc-right { text-align: right; flex-shrink: 0; }
-    .pc-amount { font-weight: 800; font-size: 16px; }
-    .pc-rem { font-size: 12px; margin-top: 3px; font-weight: 600; }
-    .pc-body { border-top: 1px solid var(--border); padding: 4px 16px 14px; }
-    .pc-bill-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid rgba(42,53,80,.6); font-size: 14px;
-    }
-    .pc-bill-row:last-of-type { border-bottom: none; }
-    .pc-bill-name { font-weight: 600; }
-    .pc-bill-due { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .pc-bill-amt { font-weight: 700; flex-shrink: 0; }
-    .prog-wrap { margin-top: 10px; }
-    .prog-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
-    .prog-bg { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
-    .prog-fill { height: 100%; border-radius: 99px; background: var(--green); }
-    .prog-fill.over { background: var(--red); }
-    .over-msg { font-size: 11px; color: var(--red); margin-top: 5px; }
+    /* Bills list */
+    .bill-row { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; transition:opacity .2s; }
+    .bill-row.paid { opacity:.55; }
+    .check-circle { width:26px; height:26px; border-radius:50%; border:2px solid var(--border); background:transparent; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .check-circle.on { background:var(--green); border-color:var(--green); }
+    .bill-info { flex:1; min-width:0; }
+    .bill-name { font-weight:700; font-size:15px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+    .bill-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+    .bill-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
+    .bill-amt { font-weight:800; font-size:16px; }
+    .bill-btns { display:flex; gap:6px; }
 
-    /* ── Badge / chip ── */
-    .chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; margin-bottom: 5px; }
-    .chip-next { background: var(--green-bg); color: var(--green); }
-    .chip-past { background: var(--surface2); color: var(--muted); }
-    .chip-paid { background: var(--green-bg); color: var(--green); font-size: 10px; padding: 2px 7px; margin-left: 6px; }
+    /* Schedule list items */
+    .sched-item { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; }
+    .sched-item-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+    .sched-name { font-weight:700; font-size:15px; }
+    .sched-detail { font-size:12px; color:var(--muted); margin-top:2px; }
+    .sched-amount { font-weight:800; font-size:18px; color:var(--green); }
+    .sched-amount-sub { font-size:11px; color:var(--muted); margin-top:2px; text-align:right; }
+    .sched-meta-row { display:flex; gap:16px; padding-top:10px; border-top:1px solid var(--border); }
+    .sched-meta-item { flex:1; }
+    .sched-meta-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; font-weight:600; }
+    .sched-meta-val { font-size:13px; font-weight:600; }
 
-    /* ── Bills list ── */
-    .bill-row {
-      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
-      padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
-      transition: opacity .2s;
-    }
-    .bill-row.paid { opacity: .55; }
-    .check-circle {
-      width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border);
-      background: transparent; cursor: pointer; flex-shrink: 0; display: flex;
-      align-items: center; justify-content: center; transition: all .15s;
-    }
-    .check-circle.on { background: var(--green); border-color: var(--green); }
-    .bill-info { flex: 1; min-width: 0; }
-    .bill-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
-    .bill-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .bill-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
-    .bill-amt { font-weight: 800; font-size: 16px; }
-    .bill-btns { display: flex; gap: 6px; }
+    /* Frequency grid */
+    .freq-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+    .freq-btn { padding:13px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--muted); cursor:pointer; text-align:left; transition:all .15s; }
+    .freq-btn.on { border-color:var(--green); background:var(--green-bg); color:var(--text); }
+    .freq-title { font-size:14px; font-weight:700; display:block; }
+    .freq-sub { font-size:11px; opacity:.7; display:block; margin-top:3px; }
 
-    /* ── Frequency grid ── */
-    .freq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
-    .freq-btn {
-      padding: 13px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-      background: transparent; color: var(--muted); cursor: pointer; text-align: left; transition: all .15s;
-    }
-    .freq-btn.on { border-color: var(--green); background: var(--green-bg); color: var(--text); }
-    .freq-title { font-size: 14px; font-weight: 700; display: block; }
-    .freq-sub { font-size: 11px; opacity: .7; display: block; margin-top: 3px; }
+    /* Modals */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
+    .modal { background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:22px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; padding-bottom:calc(22px + env(safe-area-inset-bottom,0px)); }
+    .modal-handle { width:40px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 20px; }
+    .modal-title { font-size:20px; font-weight:800; margin-bottom:20px; }
 
-    /* ── Modal (slide up) ── */
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.75);
-      display: flex; align-items: flex-end; justify-content: center; z-index: 50;
-    }
-    .modal {
-      background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;
-      padding: 22px; width: 100%; max-width: 500px;
-      max-height: 92vh; overflow-y: auto;
-      padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-    }
-    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 20px; }
-    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
-
-    /* ── Empty state ── */
-    .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
-    .empty-icon { font-size: 44px; margin-bottom: 12px; }
-    .empty-text { font-size: 15px; line-height: 1.5; }
-
-    /* ── Warn banner ── */
-    .warn-banner {
-      background: var(--yellow-bg); border: 1px solid rgba(245,158,11,.3);
-      border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px;
-      font-size: 13px; display: flex; gap: 10px; align-items: flex-start;
-    }
-    .warn-icon { font-size: 18px; flex-shrink: 0; }
-    .warn-link { color: var(--green); text-decoration: underline; cursor: pointer; font-weight: 600; }
-
-    /* prefix $ */
-    .input-prefix-wrap { position: relative; }
-    .input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; }
-    .input-prefix-wrap input { padding-left: 26px; }
+    /* Empty state */
+    .empty { text-align:center; padding:48px 20px; color:var(--muted); }
+    .empty-icon { font-size:44px; margin-bottom:12px; }
+    .empty-text { font-size:15px; line-height:1.5; }
   </style>
 </head>
 <body>
 
-<!-- ════════════════ AUTH ════════════════ -->
+<!-- ══ AUTH ══ -->
 <div id="auth-screen">
   <div class="auth-icon">
-    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
       <circle cx="32" cy="32" r="30" fill="#0f2a1a" stroke="#22c55e" stroke-width="2"/>
-      <!-- Compass rose -->
-      <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e" opacity="0.9"/>
+      <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e"/>
       <polygon points="32,56 35,36 32,38 29,36" fill="#8896b3" opacity="0.7"/>
       <polygon points="8,32 28,29 26,32 28,35" fill="#8896b3" opacity="0.7"/>
       <polygon points="56,32 36,29 38,32 36,35" fill="#8896b3" opacity="0.7"/>
       <circle cx="32" cy="32" r="4" fill="#22c55e"/>
-      <!-- Dollar sign -->
-      <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#ffffff">$</text>
+      <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
     </svg>
   </div>
   <h1 class="auth-title">Dollar Guide</h1>
   <p class="auth-sub">Your smart money compass</p>
-
   <div class="card">
     <div class="toggle-row">
       <button class="toggle-btn on" id="tab-login" onclick="setMode('login')">Sign In</button>
       <button class="toggle-btn" id="tab-signup" onclick="setMode('signup')">Create Account</button>
     </div>
     <div id="auth-alert" class="hidden"></div>
-    <div class="fg">
-      <label>Email</label>
-      <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
-    </div>
-    <div class="fg">
-      <label>Password</label>
-      <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password">
-    </div>
+    <div class="fg"><label>Email</label><input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="fg"><label>Password</label><input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn btn-green" id="auth-submit" onclick="doAuth()">Sign In</button>
   </div>
 </div>
 
-<!-- ════════════════ APP ════════════════ -->
+<!-- ══ APP ══ -->
 <div id="app">
   <div class="app-header">
-    <span class="header-title" style="display:flex;align-items:center;gap:7px;">
-      <svg width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+    <div class="header-brand">
+      <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
         <circle cx="32" cy="32" r="30" fill="#0f2a1a" stroke="#22c55e" stroke-width="2.5"/>
         <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e"/>
         <polygon points="32,56 35,36 32,38 29,36" fill="#8896b3" opacity="0.8"/>
@@ -319,7 +223,7 @@
         <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
       </svg>
       <span id="hdr-title">Dollar Guide</span>
-    </span>
+    </div>
     <button class="signout-btn" onclick="doSignOut()">Sign out</button>
   </div>
 
@@ -342,82 +246,30 @@
     <div class="page" id="pg-bills">
       <div class="sec-header">
         <span class="sec-title">My Bills</span>
-        <button class="btn btn-green btn-sm" onclick="openModal()">+ Add Bill</button>
+        <button class="btn btn-green btn-sm" onclick="openBillModal()">+ Add Bill</button>
       </div>
       <div id="bills-list"></div>
     </div>
 
     <!-- Schedule -->
     <div class="page" id="pg-schedule">
-      <div class="sec-title" style="margin-bottom:6px;">Pay Schedule</div>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.5;">Set when and how much you get paid so we can auto-assign your bills.</p>
-
-      <!-- Current schedule summary (shown when saved) -->
-      <div id="sched-current" class="hidden" style="margin-bottom:16px;">
-        <div class="card" style="background:var(--green-bg);border-color:rgba(34,197,94,.3);">
-          <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Current Schedule</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-            <div>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Frequency</div>
-              <div style="font-weight:700;font-size:14px;" id="sc-freq">—</div>
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Per Check</div>
-              <div style="font-weight:700;font-size:14px;" id="sc-amt">—</div>
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Next Pay</div>
-              <div style="font-weight:700;font-size:14px;" id="sc-date">—</div>
-            </div>
-          </div>
-        </div>
+      <div class="sec-header">
+        <span class="sec-title">Pay Schedules</span>
+        <button class="btn btn-green btn-sm" onclick="openSchedModal()">+ Add Schedule</button>
       </div>
-
-      <div class="card">
-        <div class="fg">
-          <label>How often do you get paid?</label>
-          <div class="freq-grid">
-            <button class="freq-btn" data-f="weekly" onclick="pickFreq(this)">
-              <span class="freq-title">Weekly</span><span class="freq-sub">Every week</span>
-            </button>
-            <button class="freq-btn on" data-f="biweekly" onclick="pickFreq(this)">
-              <span class="freq-title">Bi-weekly</span><span class="freq-sub">Every 2 weeks</span>
-            </button>
-            <button class="freq-btn" data-f="semimonthly" onclick="pickFreq(this)">
-              <span class="freq-title">Semi-monthly</span><span class="freq-sub">1st &amp; 15th</span>
-            </button>
-            <button class="freq-btn" data-f="monthly" onclick="pickFreq(this)">
-              <span class="freq-title">Monthly</span><span class="freq-sub">Once a month</span>
-            </button>
-          </div>
-        </div>
-        <div class="fg">
-          <label>Take-home pay per paycheck</label>
-          <div class="input-prefix-wrap">
-            <span class="input-prefix">$</span>
-            <input type="number" id="s-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal">
-          </div>
-        </div>
-        <div class="fg">
-          <label>Your next pay date</label>
-          <input type="date" id="s-date">
-        </div>
-        <div id="sched-alert" class="hidden"></div>
-        <button class="btn btn-green" onclick="saveSched()" style="margin-bottom:10px;">Save Schedule</button>
-        <button class="btn" id="sched-delete-btn" onclick="deleteSched()" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.3);display:none;">Delete Schedule</button>
-      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Add each income source — job, side gig, benefits, anything. We'll combine them all when assigning your bills.</p>
+      <div id="sched-list"></div>
     </div>
 
-  </div><!-- /page-content -->
+  </div>
 
-  <!-- Bottom nav -->
   <nav class="bottom-nav">
     <button class="nav-btn on" id="nb-dashboard" onclick="goPage('dashboard')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
       Dashboard
     </button>
     <button class="nav-btn" id="nb-bills" onclick="goPage('bills')">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       Bills
     </button>
     <button class="nav-btn" id="nb-schedule" onclick="goPage('schedule')">
@@ -427,94 +279,117 @@
   </nav>
 </div>
 
-<!-- ════════════════ BILL MODAL ════════════════ -->
-<div class="overlay hidden" id="bill-overlay" onclick="overlayClick(event)">
+<!-- ══ BILL MODAL ══ -->
+<div class="overlay hidden" id="bill-overlay" onclick="overlayClick(event,'bill-overlay')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">Add Bill</div>
+    <div class="modal-title" id="bill-modal-title">Add Bill</div>
     <input type="hidden" id="m-id">
-    <div class="fg">
-      <label>Bill Name</label>
-      <input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off">
-    </div>
+    <div class="fg"><label>Bill Name</label><input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off"></div>
     <div class="form-row">
       <div class="fg">
         <label>Amount</label>
-        <div class="input-prefix-wrap">
-          <span class="input-prefix">$</span>
-          <input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal">
-        </div>
+        <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div>
       </div>
-      <div class="fg">
-        <label>Due Day (1–31)</label>
-        <input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric">
-      </div>
+      <div class="fg"><label>Due Day (1–31)</label><input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric"></div>
     </div>
     <div class="fg">
       <label>Category</label>
       <select id="m-cat">
-        <option>Housing</option>
-        <option>Utilities</option>
-        <option>Insurance</option>
-        <option>Food</option>
-        <option>Transport</option>
-        <option>Subscriptions</option>
-        <option>Healthcare</option>
-        <option>Debt</option>
-        <option selected>Other</option>
+        <option>Housing</option><option>Utilities</option><option>Insurance</option>
+        <option>Food</option><option>Transport</option><option>Subscriptions</option>
+        <option>Healthcare</option><option>Debt</option><option selected>Other</option>
       </select>
     </div>
     <div id="m-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-green" style="flex:1;" onclick="saveBill()">Save Bill</button>
-      <button class="btn btn-gray" style="flex:1;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('bill-overlay')">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- ════════════════ SCRIPT ════════════════ -->
+<!-- ══ SCHEDULE MODAL ══ -->
+<div class="overlay hidden" id="sched-overlay" onclick="overlayClick(event,'sched-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="sched-modal-title">Add Pay Schedule</div>
+    <input type="hidden" id="sm-id">
+
+    <div class="fg"><label>Schedule Name</label><input type="text" id="sm-name" placeholder="e.g. Main Job, Side Gig, Benefits" autocomplete="off"></div>
+
+    <div class="fg">
+      <label>How often do you get paid?</label>
+      <div class="freq-grid" id="sm-freq-grid">
+        <button class="freq-btn" data-f="weekly" onclick="pickSmFreq(this)"><span class="freq-title">Weekly</span><span class="freq-sub">Every week</span></button>
+        <button class="freq-btn on" data-f="biweekly" onclick="pickSmFreq(this)"><span class="freq-title">Bi-weekly</span><span class="freq-sub">Every 2 weeks</span></button>
+        <button class="freq-btn" data-f="semimonthly" onclick="pickSmFreq(this)"><span class="freq-title">Semi-monthly</span><span class="freq-sub">Twice a month</span></button>
+        <button class="freq-btn" data-f="monthly" onclick="pickSmFreq(this)"><span class="freq-title">Monthly</span><span class="freq-sub">Once a month</span></button>
+        <button class="freq-btn" data-f="custom" onclick="pickSmFreq(this)" style="grid-column:span 2;"><span class="freq-title">Custom Days</span><span class="freq-sub">You choose which days of the month you get paid</span></button>
+      </div>
+    </div>
+
+    <!-- Custom days input (shown only for custom) -->
+    <div class="fg hidden" id="sm-custom-wrap">
+      <label>Pay days of the month</label>
+      <input type="text" id="sm-custom-days" placeholder="e.g. 1, 15  or  3, 17, 30" autocomplete="off">
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Enter the day numbers separated by commas</p>
+    </div>
+
+    <!-- Next pay date (hidden for custom) -->
+    <div class="fg" id="sm-date-wrap">
+      <label>Next pay date</label>
+      <input type="date" id="sm-date">
+    </div>
+
+    <div class="fg">
+      <label>Take-home pay per paycheck</label>
+      <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="sm-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal"></div>
+    </div>
+
+    <div id="sm-alert" class="hidden" style="margin-bottom:14px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-green" style="flex:1;" onclick="saveSched()">Save Schedule</button>
+      <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('sched-overlay')">Cancel</button>
+    </div>
+    <button class="btn btn-red hidden" id="sm-delete-btn" onclick="deleteSched()">Delete This Schedule</button>
+  </div>
+</div>
+
 <script>
-// ╔══════════════════════════════════════════════════╗
-// ║  ⚙️  Dollar Guide — Supabase Config             ║
-// ╚══════════════════════════════════════════════════╝
+// ══ CONFIG ══════════════════════════════════════════
 const SUPABASE_URL = 'https://otuzlghhrvfvapmiyvgi.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dXpsZ2hocnZmdmFwbWl5dmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzcxNzUsImV4cCI6MjA5NjYxMzE3NX0.VYgdsjv9GL7DZvVxuLxuSdzlk66ClbiT8U9LIef7zj4'
 // ════════════════════════════════════════════════════
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ── State ──────────────────────────────────────────
 const S = {
   user: null,
   bills: [],
-  schedule: null,
+  schedules: [],   // array — supports multiple
   payments: [],
   strategy: 'proximity',
   authMode: 'login',
-  freq: 'biweekly',
+  smFreq: 'biweekly',
 }
 
-const NOW   = new Date()
-const MY    = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`  // "2026-06"
+const NOW = new Date()
+const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
 
-// ── Boot ───────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────
 async function boot() {
   const { data: { session } } = await db.auth.getSession()
   if (session?.user) { S.user = session.user; await enter() }
-
   db.auth.onAuthStateChange(async (_e, sess) => {
     if (sess?.user && !S.user) { S.user = sess.user; await enter() }
-    else if (!sess?.user)      { S.user = null; showAuth() }
+    else if (!sess?.user) { S.user = null; showAuth() }
   })
 }
 
-async function enter() {
-  showApp()
-  await loadAll()
-  renderAll()
-}
+async function enter() { showApp(); await loadAll(); renderAll() }
 
-// ── Auth ───────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────
 function setMode(m) {
   S.authMode = m
   document.getElementById('tab-login').classList.toggle('on', m==='login')
@@ -535,7 +410,7 @@ async function doAuth() {
       ({ error: err } = await db.auth.signInWithPassword({ email, password: pass }))
     } else {
       ({ error: err } = await db.auth.signUp({ email, password: pass }))
-      if (!err) { showAlert('auth-alert','✓ Account created! Check your email to confirm.','success'); btn.disabled=false; btn.textContent='Create Account'; return }
+      if (!err) { showAlert('auth-alert','✓ Account created! You can now sign in.','success'); btn.disabled=false; btn.textContent='Create Account'; return }
     }
     if (err) throw err
   } catch(e) {
@@ -544,48 +419,43 @@ async function doAuth() {
   }
 }
 
-async function doSignOut() {
-  await db.auth.signOut()
-}
+async function doSignOut() { await db.auth.signOut() }
+function showAuth() { document.getElementById('auth-screen').style.display='flex'; document.getElementById('app').style.display='none' }
+function showApp()  { document.getElementById('auth-screen').style.display='none'; document.getElementById('app').style.display='flex' }
 
-function showAuth() {
-  document.getElementById('auth-screen').style.display = 'flex'
-  document.getElementById('app').style.display = 'none'
-}
-function showApp() {
-  document.getElementById('auth-screen').style.display = 'none'
-  document.getElementById('app').style.display = 'flex'
-}
-
-// ── Load data ──────────────────────────────────────
+// ── Load ──────────────────────────────────────────
 async function loadAll() {
   const [br, sr, pr] = await Promise.all([
     db.from('bills').select('*').eq('is_active', true).order('due_day'),
-    db.from('pay_schedule').select('*').maybeSingle(),
+    db.from('pay_schedule').select('*').order('created_at'),
     db.from('bill_payments').select('*').eq('month_year', MY),
   ])
-  S.bills    = br.data ?? []
-  S.schedule = sr.data ?? null
-  S.payments = pr.data ?? []
-
-  renderSchedForm()
+  S.bills     = br.data ?? []
+  S.schedules = sr.data ?? []
+  S.payments  = pr.data ?? []
 }
 
-// ── Render all ─────────────────────────────────────
-function renderAll() { renderSummary(); renderPaychecks(); renderBills() }
+function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList() }
 
-// ── Summary ────────────────────────────────────────
+// ── Summary ───────────────────────────────────────
 function renderSummary() {
   const paidSet    = new Set(S.payments.map(p => p.bill_id))
   const totalBills = S.bills.reduce((s,b) => s+b.amount, 0)
   const paidAmt    = S.bills.filter(b => paidSet.has(b.id)).reduce((s,b) => s+b.amount, 0)
   const stillOwed  = totalBills - paidAmt
 
-  let monthIncome = 0
-  if (S.schedule) {
-    const a = Number(S.schedule.amount), f = S.schedule.frequency
-    monthIncome = f==='weekly' ? a*4.33 : f==='biweekly' ? a*2.17 : f==='semimonthly' ? a*2 : a
-  }
+  let monthIncome = S.schedules.reduce((sum, s) => {
+    const a = Number(s.amount), f = s.frequency
+    if (f==='weekly') return sum + a*4.33
+    if (f==='biweekly') return sum + a*2.17
+    if (f==='semimonthly') return sum + a*2
+    if (f==='custom') {
+      const days = parseCustomDays(s.custom_days)
+      return sum + a * days.length
+    }
+    return sum + a
+  }, 0)
+
   const leftover = monthIncome - totalBills
 
   document.getElementById('sum-grid').innerHTML = `
@@ -601,19 +471,154 @@ function renderSummary() {
     </div>
     <div class="sum-card">
       <div class="sum-label">Monthly Income</div>
-      <div class="sum-val">${S.schedule?'$'+fmt(monthIncome):'—'}</div>
-      <div class="sum-sub">${S.schedule?'est. take-home':'set schedule →'}</div>
+      <div class="sum-val">${S.schedules.length?'$'+fmt(monthIncome):'—'}</div>
+      <div class="sum-sub">${S.schedules.length?S.schedules.length+' source'+(S.schedules.length>1?'s':''):'add schedule →'}</div>
     </div>
     <div class="sum-card">
       <div class="sum-label">Left Over</div>
-      <div class="sum-val ${S.schedule?(leftover>=0?'c-green':'c-red'):''}">
-        ${S.schedule?'$'+fmt(leftover):'—'}
+      <div class="sum-val ${S.schedules.length?(leftover>=0?'c-green':'c-red'):''}">
+        ${S.schedules.length?'$'+fmt(leftover):'—'}
       </div>
       <div class="sum-sub">after all bills</div>
     </div>`
 }
 
-// ── Paychecks ──────────────────────────────────────
+// ── Schedule list ─────────────────────────────────
+const FREQ_LABELS = { weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly', custom:'Custom' }
+
+function renderSchedList() {
+  const el = document.getElementById('sched-list')
+  if (!S.schedules.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No pay schedules yet.<br>Tap <strong>+ Add Schedule</strong> to get started.</div></div>`
+    return
+  }
+  el.innerHTML = S.schedules.map(s => {
+    const freq = FREQ_LABELS[s.frequency] || s.frequency
+    const nextDate = s.frequency === 'custom'
+      ? nextCustomDate(s.custom_days)
+      : (s.next_pay_date ? new Date(s.next_pay_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—')
+    const detail = s.frequency === 'custom'
+      ? `Days: ${s.custom_days}`
+      : `Next: ${nextDate}`
+
+    return `<div class="sched-item">
+      <div class="sched-item-header">
+        <div>
+          <div class="sched-name">${s.name}</div>
+          <div class="sched-detail">${freq} · ${detail}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="sched-amount">$${fmt(s.amount)}</div>
+          <div class="sched-amount-sub">per paycheck</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openSchedModal('${s.id}')">Edit</button>
+        <button class="btn btn-red btn-sm" style="flex:1;" onclick="deleteSchedById('${s.id}')">Delete</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ── Schedule modal ────────────────────────────────
+let smFreq = 'biweekly'
+
+function openSchedModal(editId) {
+  clearAlert('sm-alert')
+  document.getElementById('sm-id').value = editId || ''
+  document.getElementById('sched-modal-title').textContent = editId ? 'Edit Pay Schedule' : 'Add Pay Schedule'
+  document.getElementById('sm-delete-btn').classList.toggle('hidden', !editId)
+
+  if (editId) {
+    const s = S.schedules.find(x => x.id===editId)
+    document.getElementById('sm-name').value   = s.name
+    document.getElementById('sm-amount').value = s.amount
+    document.getElementById('sm-date').value   = s.next_pay_date || ''
+    document.getElementById('sm-custom-days').value = s.custom_days || ''
+    smFreq = s.frequency
+  } else {
+    document.getElementById('sm-name').value   = ''
+    document.getElementById('sm-amount').value = ''
+    document.getElementById('sm-custom-days').value = ''
+    smFreq = 'biweekly'
+    // default next pay date = next Friday
+    const d = new Date(), diff = (5 - d.getDay() + 7) % 7 || 7
+    d.setDate(d.getDate() + diff)
+    document.getElementById('sm-date').value = d.toISOString().split('T')[0]
+  }
+
+  // Set freq buttons
+  document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f===smFreq))
+  updateSmFreqUI()
+  document.getElementById('sched-overlay').classList.remove('hidden')
+  setTimeout(() => document.getElementById('sm-name').focus(), 100)
+}
+
+function pickSmFreq(btn) {
+  smFreq = btn.dataset.f
+  document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b===btn))
+  updateSmFreqUI()
+}
+
+function updateSmFreqUI() {
+  const isCustom = smFreq === 'custom'
+  document.getElementById('sm-custom-wrap').classList.toggle('hidden', !isCustom)
+  document.getElementById('sm-date-wrap').classList.toggle('hidden', isCustom)
+}
+
+async function saveSched() {
+  const id     = document.getElementById('sm-id').value
+  const name   = document.getElementById('sm-name').value.trim()
+  const amount = parseFloat(document.getElementById('sm-amount').value)
+  const date   = document.getElementById('sm-date').value
+  const customDays = document.getElementById('sm-custom-days').value.trim()
+
+  if (!name)               return showAlert('sm-alert','Enter a schedule name','error')
+  if (!amount || amount<=0) return showAlert('sm-alert','Enter a valid amount','error')
+
+  if (smFreq === 'custom') {
+    const days = parseCustomDays(customDays)
+    if (!days.length) return showAlert('sm-alert','Enter at least one valid day (1–31)','error')
+  } else {
+    if (!date) return showAlert('sm-alert','Select your next pay date','error')
+  }
+
+  const payload = {
+    name,
+    frequency: smFreq,
+    amount,
+    next_pay_date: smFreq === 'custom' ? null : date,
+    custom_days:   smFreq === 'custom' ? customDays : null,
+  }
+
+  let err
+  if (id) {
+    ({ error: err } = await db.from('pay_schedule').update(payload).eq('id', id))
+  } else {
+    ({ error: err } = await db.from('pay_schedule').insert({ ...payload, user_id: S.user.id }))
+  }
+  if (err) return showAlert('sm-alert', err.message, 'error')
+
+  closeOverlay('sched-overlay')
+  const { data } = await db.from('pay_schedule').select('*').order('created_at')
+  S.schedules = data ?? []
+  renderAll()
+}
+
+async function deleteSched() {
+  const id = document.getElementById('sm-id').value
+  if (id) await deleteSchedById(id, true)
+}
+
+async function deleteSchedById(id, fromModal=false) {
+  if (!confirm('Delete this pay schedule?')) return
+  await db.from('pay_schedule').delete().eq('id', id)
+  S.schedules = S.schedules.filter(s => s.id !== id)
+  if (fromModal) closeOverlay('sched-overlay')
+  renderAll()
+}
+
+// ── Paychecks ─────────────────────────────────────
 function setStrat(s) {
   S.strategy = s
   document.getElementById('sp-proximity').classList.toggle('on', s==='proximity')
@@ -623,8 +628,8 @@ function setStrat(s) {
 
 function renderPaychecks() {
   const el = document.getElementById('pc-list')
-  if (!S.schedule) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Set up your <strong>Pay Schedule</strong> tab so we can assign bills to paychecks.</div></div>`
+  if (!S.schedules.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Add a <strong>Pay Schedule</strong> so we can assign your bills to paychecks.</div></div>`
     return
   }
   if (!S.bills.length) {
@@ -632,10 +637,13 @@ function renderPaychecks() {
     return
   }
 
-  const paychecks = genPayDates(S.schedule, 3)
-  const groups    = S.strategy==='proximity'
-    ? byDueDate(S.bills, paychecks, 3)
-    : evenly(S.bills, paychecks, 3)
+  // Merge paychecks from all schedules
+  const allPaychecks = S.schedules.flatMap(s => genPayDates(s, 3))
+  allPaychecks.sort((a,b) => a.date - b.date)
+
+  const groups = S.strategy==='proximity'
+    ? byDueDate(S.bills, allPaychecks, 3)
+    : evenly(S.bills, allPaychecks, 3)
 
   const paidSet  = new Set(S.payments.map(p => p.bill_id))
   const todayMs  = new Date().setHours(0,0,0,0)
@@ -659,14 +667,16 @@ function renderPaychecks() {
       </div>`
     }).join('')
 
-    const bodyOpen = 'block'
+    // Show schedule name if multiple schedules
+    const sourceLabel = S.schedules.length > 1 && g.paycheck.schedName
+      ? `<span class="chip chip-job">${g.paycheck.schedName}</span>` : ''
 
     return `<div class="pc-card ${isNext?'next':''}">
       <div class="pc-header" onclick="togglePCBody(this)">
         <div>
-          ${isNext ? '<span class="chip chip-next">▶ Next Paycheck</span><br>' : ''}
-          ${isPast ? '<span class="chip chip-past">Past</span><br>' : ''}
-          <div class="pc-date">${g.paycheck.label}</div>
+          ${isNext?'<span class="chip chip-next">▶ Next Paycheck</span><br>':''}
+          ${isPast?'<span class="chip chip-past">Past</span><br>':''}
+          <div class="pc-date">${g.paycheck.label} ${sourceLabel}</div>
           <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due</div>
         </div>
         <div class="pc-right">
@@ -674,7 +684,7 @@ function renderPaychecks() {
           <div class="pc-rem ${over?'c-red':'c-green'}">$${fmt(g.remaining)} left</div>
         </div>
       </div>
-      <div class="pc-body" style="display:${bodyOpen}">
+      <div class="pc-body">
         ${rows}
         <div class="prog-wrap">
           <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
@@ -693,9 +703,9 @@ function togglePCBody(hdr) {
   body.style.display = body.style.display === 'none' ? 'block' : 'none'
 }
 
-// ── Bills ──────────────────────────────────────────
+// ── Bills ─────────────────────────────────────────
 function renderBills() {
-  const el     = document.getElementById('bills-list')
+  const el      = document.getElementById('bills-list')
   const paidSet = new Set(S.payments.map(p => p.bill_id))
 
   if (!S.bills.length) {
@@ -705,7 +715,7 @@ function renderBills() {
 
   el.innerHTML = S.bills.map(b => {
     const paid = paidSet.has(b.id)
-    return `<div class="bill-row ${paid?'paid':''}" id="br-${b.id}">
+    return `<div class="bill-row ${paid?'paid':''}">
       <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">
         ${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}
       </button>
@@ -716,10 +726,10 @@ function renderBills() {
       <div class="bill-right">
         <div class="bill-amt">$${fmt(b.amount)}</div>
         <div class="bill-btns">
-          <button class="btn-icon" title="Edit" onclick="openModal('${b.id}')">
+          <button class="btn-icon" onclick="openBillModal('${b.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
-          <button class="btn-icon del" title="Delete" onclick="delBill('${b.id}')">
+          <button class="btn-icon del" onclick="delBill('${b.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
@@ -739,11 +749,11 @@ async function togglePaid(id, wasPaid) {
   renderBills(); renderSummary(); renderPaychecks()
 }
 
-// ── Bill modal ─────────────────────────────────────
-function openModal(editId) {
+// ── Bill modal ────────────────────────────────────
+function openBillModal(editId) {
   clearAlert('m-alert')
   document.getElementById('m-id').value = editId || ''
-  document.getElementById('modal-title').textContent = editId ? 'Edit Bill' : 'Add Bill'
+  document.getElementById('bill-modal-title').textContent = editId ? 'Edit Bill' : 'Add Bill'
   if (editId) {
     const b = S.bills.find(x => x.id===editId)
     document.getElementById('m-name').value   = b.name
@@ -760,9 +770,6 @@ function openModal(editId) {
   setTimeout(() => document.getElementById('m-name').focus(), 100)
 }
 
-function closeModal() { document.getElementById('bill-overlay').classList.add('hidden') }
-function overlayClick(e) { if (e.target===document.getElementById('bill-overlay')) closeModal() }
-
 async function saveBill() {
   const id     = document.getElementById('m-id').value
   const name   = document.getElementById('m-name').value.trim()
@@ -770,9 +777,9 @@ async function saveBill() {
   const due    = parseInt(document.getElementById('m-due').value)
   const cat    = document.getElementById('m-cat').value
 
-  if (!name)                        return showAlert('m-alert','Enter a bill name','error')
-  if (!amount || amount <= 0)       return showAlert('m-alert','Enter a valid amount','error')
-  if (!due || due<1 || due>31)      return showAlert('m-alert','Due day must be 1–31','error')
+  if (!name)                   return showAlert('m-alert','Enter a bill name','error')
+  if (!amount || amount <= 0)  return showAlert('m-alert','Enter a valid amount','error')
+  if (!due || due<1 || due>31) return showAlert('m-alert','Due day must be 1–31','error')
 
   const payload = { name, amount, due_day: due, category: cat }
   let err
@@ -783,7 +790,7 @@ async function saveBill() {
   }
   if (err) return showAlert('m-alert', err.message, 'error')
 
-  closeModal()
+  closeOverlay('bill-overlay')
   const { data } = await db.from('bills').select('*').eq('is_active', true).order('due_day')
   S.bills = data ?? []
   renderAll()
@@ -796,74 +803,8 @@ async function delBill(id) {
   renderAll()
 }
 
-// ── Schedule ───────────────────────────────────────
-const FREQ_LABELS = { weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly' }
-
-function renderSchedForm() {
-  if (S.schedule) {
-    const s = S.schedule
-    S.freq = s.frequency
-    document.getElementById('s-amount').value = s.amount
-    document.getElementById('s-date').value   = s.next_pay_date
-    document.querySelectorAll('.freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f === s.frequency))
-    // Update summary card
-    document.getElementById('sched-current').classList.remove('hidden')
-    document.getElementById('sc-freq').textContent = FREQ_LABELS[s.frequency] || s.frequency
-    document.getElementById('sc-amt').textContent  = '$' + fmt(s.amount)
-    document.getElementById('sc-date').textContent = new Date(s.next_pay_date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
-    document.getElementById('sched-delete-btn').style.display = 'block'
-  } else {
-    document.getElementById('sched-current').classList.add('hidden')
-    document.getElementById('sched-delete-btn').style.display = 'none'
-    // default to next Friday
-    const d = new Date(), diff = (5 - d.getDay() + 7) % 7 || 7
-    d.setDate(d.getDate() + diff)
-    document.getElementById('s-date').value = d.toISOString().split('T')[0]
-  }
-}
-
-function pickFreq(btn) {
-  document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('on'))
-  btn.classList.add('on')
-  S.freq = btn.dataset.f
-}
-
-async function saveSched() {
-  const amt  = parseFloat(document.getElementById('s-amount').value)
-  const date = document.getElementById('s-date').value
-  if (!amt || amt<=0) return showAlert('sched-alert','Enter a valid paycheck amount','error')
-  if (!date)          return showAlert('sched-alert','Select your next pay date','error')
-
-  const payload = { frequency: S.freq, amount: amt, next_pay_date: date }
-  let err
-  if (S.schedule) {
-    ({ error: err } = await db.from('pay_schedule').update(payload).eq('id', S.schedule.id))
-  } else {
-    ({ error: err } = await db.from('pay_schedule').insert({ ...payload, user_id: S.user.id }))
-  }
-  if (err) return showAlert('sched-alert', err.message, 'error')
-
-  showAlert('sched-alert','✓ Schedule saved!','success')
-  const { data } = await db.from('pay_schedule').select('*').maybeSingle()
-  S.schedule = data
-  renderSchedForm()
-  renderSummary(); renderPaychecks()
-}
-
-async function deleteSched() {
-  if (!confirm('Delete your pay schedule? This will remove bill assignments from the dashboard.')) return
-  if (!S.schedule) return
-  await db.from('pay_schedule').delete().eq('id', S.schedule.id)
-  S.schedule = null
-  document.getElementById('s-amount').value = ''
-  document.getElementById('s-date').value   = ''
-  clearAlert('sched-alert')
-  renderSchedForm()
-  renderSummary(); renderPaychecks()
-}
-
-// ── Pages ──────────────────────────────────────────
-const PAGE_TITLES = { dashboard:'Dashboard', bills:'My Bills', schedule:'Pay Schedule' }
+// ── Pages ─────────────────────────────────────────
+const PAGE_TITLES = { dashboard:'Dollar Guide', bills:'My Bills', schedule:'Pay Schedules' }
 function goPage(p) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('on'))
   document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('on'))
@@ -872,12 +813,32 @@ function goPage(p) {
   document.getElementById('hdr-title').textContent = PAGE_TITLES[p]
 }
 
-// ── Bill assignment engine ─────────────────────────
+// ── Overlay helpers ───────────────────────────────
+function closeOverlay(id) { document.getElementById(id).classList.add('hidden') }
+function overlayClick(e, id) { if (e.target===document.getElementById(id)) closeOverlay(id) }
+
+// ── Assignment engine ─────────────────────────────
 function addD(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
 function addM(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x }
 function dStr(d){ return d.toISOString().split('T')[0] }
 function parseD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
 function fmtD(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }
+
+function parseCustomDays(str) {
+  if (!str) return []
+  return str.split(',').map(s=>parseInt(s.trim())).filter(n=>n>=1&&n<=31)
+}
+
+function nextCustomDate(str) {
+  const days = parseCustomDays(str).sort((a,b)=>a-b)
+  if (!days.length) return '—'
+  const today = new Date()
+  const d = today.getDate(), m = today.getMonth(), y = today.getFullYear()
+  for (const day of days) {
+    if (day >= d) return new Date(y,m,day).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+  }
+  return new Date(y,m+1,days[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+}
 
 function fwdStep(d,f){
   if(f==='weekly')      return addD(d,7)
@@ -892,14 +853,31 @@ function bakStep(d,f){
   return d.getDate()>=15 ? new Date(d.getFullYear(),d.getMonth(),1) : new Date(d.getFullYear(),d.getMonth()-1,15)
 }
 
-function genPayDates(sched,mo){
+function genPayDates(sched, mo) {
   const today=new Date(); today.setHours(0,0,0,0)
   const end=addM(today,mo), look=addD(today,-30)
+  const out=[]
+
+  if (sched.frequency === 'custom') {
+    const days = parseCustomDays(sched.custom_days).sort((a,b)=>a-b)
+    if (!days.length) return out
+    let y=look.getFullYear(), m=look.getMonth()
+    while(new Date(y,m,1)<=end){
+      for(const day of days){
+        const lastDay=new Date(y,m+1,0).getDate()
+        const clampedDay=Math.min(day,lastDay)
+        const pd=new Date(y,m,clampedDay)
+        if(pd>=look && pd<=end) out.push({date:pd,dateStr:dStr(pd),label:fmtD(pd),netAmount:Number(sched.amount),schedName:sched.name})
+      }
+      m++; if(m>11){m=0;y++}
+    }
+    return out
+  }
+
   let cur=parseD(sched.next_pay_date)
   while(cur>look) cur=bakStep(cur,sched.frequency)
-  const out=[]
   while(cur<=end){
-    if(cur>=look) out.push({date:new Date(cur),dateStr:dStr(cur),label:fmtD(cur),netAmount:Number(sched.amount)})
+    if(cur>=look) out.push({date:new Date(cur),dateStr:dStr(cur),label:fmtD(cur),netAmount:Number(sched.amount),schedName:sched.name})
     cur=fwdStep(cur,sched.frequency)
   }
   return out
@@ -956,16 +934,12 @@ function evenly(bills,paychecks,mo){
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
 
-// ── Helpers ────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────
 function fmt(n){ return Number(n).toFixed(2) }
 function ordinal(n){ const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
-function showAlert(id,msg,type){
-  const el=document.getElementById(id)
-  el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden')
-}
+function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
 function clearAlert(id){ const el=document.getElementById(id); el.classList.add('hidden'); el.textContent='' }
 
-// ── Go ─────────────────────────────────────────────
 boot()
 </script>
 </body>
