@@ -308,8 +308,8 @@
 <!-- ════════════════ APP ════════════════ -->
 <div id="app">
   <div class="app-header">
-    <span class="header-title" id="hdr-title">
-      <svg width="18" height="18" viewBox="0 0 64 64" fill="none" style="vertical-align:-3px;margin-right:6px;" xmlns="http://www.w3.org/2000/svg">
+    <span class="header-title" style="display:flex;align-items:center;gap:7px;">
+      <svg width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
         <circle cx="32" cy="32" r="30" fill="#0f2a1a" stroke="#22c55e" stroke-width="2.5"/>
         <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e"/>
         <polygon points="32,56 35,36 32,38 29,36" fill="#8896b3" opacity="0.8"/>
@@ -317,7 +317,9 @@
         <polygon points="56,32 36,29 38,32 36,35" fill="#8896b3" opacity="0.8"/>
         <circle cx="32" cy="32" r="4" fill="#22c55e"/>
         <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
-      </svg>Dollar Guide</span>
+      </svg>
+      <span id="hdr-title">Dollar Guide</span>
+    </span>
     <button class="signout-btn" onclick="doSignOut()">Sign out</button>
   </div>
 
@@ -349,6 +351,28 @@
     <div class="page" id="pg-schedule">
       <div class="sec-title" style="margin-bottom:6px;">Pay Schedule</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.5;">Set when and how much you get paid so we can auto-assign your bills.</p>
+
+      <!-- Current schedule summary (shown when saved) -->
+      <div id="sched-current" class="hidden" style="margin-bottom:16px;">
+        <div class="card" style="background:var(--green-bg);border-color:rgba(34,197,94,.3);">
+          <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Current Schedule</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Frequency</div>
+              <div style="font-weight:700;font-size:14px;" id="sc-freq">—</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Per Check</div>
+              <div style="font-weight:700;font-size:14px;" id="sc-amt">—</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Next Pay</div>
+              <div style="font-weight:700;font-size:14px;" id="sc-date">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="fg">
           <label>How often do you get paid?</label>
@@ -379,7 +403,8 @@
           <input type="date" id="s-date">
         </div>
         <div id="sched-alert" class="hidden"></div>
-        <button class="btn btn-green" onclick="saveSched()">Save Schedule</button>
+        <button class="btn btn-green" onclick="saveSched()" style="margin-bottom:10px;">Save Schedule</button>
+        <button class="btn" id="sched-delete-btn" onclick="deleteSched()" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.3);display:none;">Delete Schedule</button>
       </div>
     </div>
 
@@ -543,18 +568,7 @@ async function loadAll() {
   S.schedule = sr.data ?? null
   S.payments = pr.data ?? []
 
-  // Pre-fill schedule form
-  if (S.schedule) {
-    S.freq = S.schedule.frequency
-    document.getElementById('s-amount').value = S.schedule.amount
-    document.getElementById('s-date').value   = S.schedule.next_pay_date
-    document.querySelectorAll('.freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f === S.freq))
-  } else {
-    // default to next Friday
-    const d = new Date(), diff = (5 - d.getDay() + 7) % 7 || 7
-    d.setDate(d.getDate() + diff)
-    document.getElementById('s-date').value = d.toISOString().split('T')[0]
-  }
+  renderSchedForm()
 }
 
 // ── Render all ─────────────────────────────────────
@@ -645,7 +659,7 @@ function renderPaychecks() {
       </div>`
     }).join('')
 
-    const bodyOpen = isNext ? 'block' : 'none'
+    const bodyOpen = 'block'
 
     return `<div class="pc-card ${isNext?'next':''}">
       <div class="pc-header" onclick="togglePCBody(this)">
@@ -783,6 +797,31 @@ async function delBill(id) {
 }
 
 // ── Schedule ───────────────────────────────────────
+const FREQ_LABELS = { weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly' }
+
+function renderSchedForm() {
+  if (S.schedule) {
+    const s = S.schedule
+    S.freq = s.frequency
+    document.getElementById('s-amount').value = s.amount
+    document.getElementById('s-date').value   = s.next_pay_date
+    document.querySelectorAll('.freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f === s.frequency))
+    // Update summary card
+    document.getElementById('sched-current').classList.remove('hidden')
+    document.getElementById('sc-freq').textContent = FREQ_LABELS[s.frequency] || s.frequency
+    document.getElementById('sc-amt').textContent  = '$' + fmt(s.amount)
+    document.getElementById('sc-date').textContent = new Date(s.next_pay_date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+    document.getElementById('sched-delete-btn').style.display = 'block'
+  } else {
+    document.getElementById('sched-current').classList.add('hidden')
+    document.getElementById('sched-delete-btn').style.display = 'none'
+    // default to next Friday
+    const d = new Date(), diff = (5 - d.getDay() + 7) % 7 || 7
+    d.setDate(d.getDate() + diff)
+    document.getElementById('s-date').value = d.toISOString().split('T')[0]
+  }
+}
+
 function pickFreq(btn) {
   document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('on'))
   btn.classList.add('on')
@@ -804,9 +843,22 @@ async function saveSched() {
   }
   if (err) return showAlert('sched-alert', err.message, 'error')
 
-  showAlert('sched-alert','✓ Saved!','success')
+  showAlert('sched-alert','✓ Schedule saved!','success')
   const { data } = await db.from('pay_schedule').select('*').maybeSingle()
   S.schedule = data
+  renderSchedForm()
+  renderSummary(); renderPaychecks()
+}
+
+async function deleteSched() {
+  if (!confirm('Delete your pay schedule? This will remove bill assignments from the dashboard.')) return
+  if (!S.schedule) return
+  await db.from('pay_schedule').delete().eq('id', S.schedule.id)
+  S.schedule = null
+  document.getElementById('s-amount').value = ''
+  document.getElementById('s-date').value   = ''
+  clearAlert('sched-alert')
+  renderSchedForm()
   renderSummary(); renderPaychecks()
 }
 
