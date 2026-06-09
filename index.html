@@ -285,14 +285,36 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="bill-modal-title">Add Bill</div>
     <input type="hidden" id="m-id">
-    <div class="fg"><label>Bill Name</label><input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off"></div>
-    <div class="form-row">
-      <div class="fg">
-        <label>Amount</label>
-        <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div>
+
+    <!-- Bill type toggle -->
+    <div class="fg">
+      <label>Bill Type</label>
+      <div class="toggle-row" style="margin-bottom:0;">
+        <button class="toggle-btn on" id="m-type-recurring" onclick="setBillType('recurring')">🔁 Recurring</button>
+        <button class="toggle-btn" id="m-type-single" onclick="setBillType('single')">1️⃣ One-Time</button>
       </div>
-      <div class="fg"><label>Due Day (1–31)</label><input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric"></div>
     </div>
+
+    <div class="fg"><label>Bill Name</label><input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off"></div>
+    <div class="fg">
+      <label>Amount</label>
+      <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div>
+    </div>
+
+    <!-- Recurring: day of month -->
+    <div class="fg" id="m-due-wrap">
+      <label>Due Day of Month (1–31)</label>
+      <input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric">
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">Repeats every month on this day</p>
+    </div>
+
+    <!-- One-time: specific date -->
+    <div class="fg hidden" id="m-date-wrap">
+      <label>Due Date</label>
+      <input type="date" id="m-due-date">
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">This bill appears once on this date</p>
+    </div>
+
     <div class="fg">
       <label>Category</label>
       <select id="m-cat">
@@ -721,7 +743,7 @@ function renderBills() {
       </button>
       <div class="bill-info">
         <div class="bill-name">${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}</div>
-        <div class="bill-meta">Due on the ${ordinal(b.due_day)} · ${b.category}</div>
+        <div class="bill-meta">${billMeta(b)}</div>
       </div>
       <div class="bill-right">
         <div class="bill-amt">$${fmt(b.amount)}</div>
@@ -750,21 +772,36 @@ async function togglePaid(id, wasPaid) {
 }
 
 // ── Bill modal ────────────────────────────────────
+let mBillType = 'recurring'
+
+function setBillType(t) {
+  mBillType = t
+  document.getElementById('m-type-recurring').classList.toggle('on', t==='recurring')
+  document.getElementById('m-type-single').classList.toggle('on', t==='single')
+  document.getElementById('m-due-wrap').classList.toggle('hidden', t==='single')
+  document.getElementById('m-date-wrap').classList.toggle('hidden', t==='recurring')
+}
+
 function openBillModal(editId) {
   clearAlert('m-alert')
   document.getElementById('m-id').value = editId || ''
   document.getElementById('bill-modal-title').textContent = editId ? 'Edit Bill' : 'Add Bill'
   if (editId) {
     const b = S.bills.find(x => x.id===editId)
-    document.getElementById('m-name').value   = b.name
-    document.getElementById('m-amount').value = b.amount
-    document.getElementById('m-due').value    = b.due_day
-    document.getElementById('m-cat').value    = b.category
+    const type = b.bill_type || 'recurring'
+    document.getElementById('m-name').value     = b.name
+    document.getElementById('m-amount').value   = b.amount
+    document.getElementById('m-due').value      = b.due_day || ''
+    document.getElementById('m-due-date').value = b.due_date || ''
+    document.getElementById('m-cat').value      = b.category
+    setBillType(type)
   } else {
-    document.getElementById('m-name').value   = ''
-    document.getElementById('m-amount').value = ''
-    document.getElementById('m-due').value    = ''
-    document.getElementById('m-cat').value    = 'Other'
+    document.getElementById('m-name').value     = ''
+    document.getElementById('m-amount').value   = ''
+    document.getElementById('m-due').value      = ''
+    document.getElementById('m-due-date').value = ''
+    document.getElementById('m-cat').value      = 'Other'
+    setBillType('recurring')
   }
   document.getElementById('bill-overlay').classList.remove('hidden')
   setTimeout(() => document.getElementById('m-name').focus(), 100)
@@ -774,14 +811,25 @@ async function saveBill() {
   const id     = document.getElementById('m-id').value
   const name   = document.getElementById('m-name').value.trim()
   const amount = parseFloat(document.getElementById('m-amount').value)
-  const due    = parseInt(document.getElementById('m-due').value)
   const cat    = document.getElementById('m-cat').value
 
-  if (!name)                   return showAlert('m-alert','Enter a bill name','error')
-  if (!amount || amount <= 0)  return showAlert('m-alert','Enter a valid amount','error')
-  if (!due || due<1 || due>31) return showAlert('m-alert','Due day must be 1–31','error')
+  if (!name)                  return showAlert('m-alert','Enter a bill name','error')
+  if (!amount || amount <= 0) return showAlert('m-alert','Enter a valid amount','error')
 
-  const payload = { name, amount, due_day: due, category: cat }
+  let payload = { name, amount, category: cat, bill_type: mBillType }
+
+  if (mBillType === 'recurring') {
+    const due = parseInt(document.getElementById('m-due').value)
+    if (!due || due<1 || due>31) return showAlert('m-alert','Due day must be 1–31','error')
+    payload.due_day  = due
+    payload.due_date = null
+  } else {
+    const dueDate = document.getElementById('m-due-date').value
+    if (!dueDate) return showAlert('m-alert','Select a due date','error')
+    payload.due_date = dueDate
+    payload.due_day  = null
+  }
+
   let err
   if (id) {
     ({ error: err } = await db.from('bills').update(payload).eq('id', id))
@@ -884,6 +932,12 @@ function genPayDates(sched, mo) {
 }
 
 function dueDates(bill,start,end){
+  // One-time bill: single specific date
+  if (bill.bill_type === 'single' && bill.due_date) {
+    const d = parseD(bill.due_date)
+    return (d >= start && d <= end) ? [d] : []
+  }
+  // Recurring: every month on due_day
   const dates=[]; let y=start.getFullYear(),m=start.getMonth()
   while(true){
     const last=new Date(y,m+1,0).getDate(), day=Math.min(bill.due_day,last)
@@ -935,6 +989,13 @@ function evenly(bills,paychecks,mo){
 }
 
 // ── Helpers ───────────────────────────────────────
+function billMeta(b) {
+  if (b.bill_type === 'single' && b.due_date) {
+    const d = new Date(b.due_date + 'T00:00:00')
+    return `One-time · Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}`
+  }
+  return `Recurring · Due on the ${ordinal(b.due_day)} · ${b.category}`
+}
 function fmt(n){ return Number(n).toFixed(2) }
 function ordinal(n){ const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
 function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
