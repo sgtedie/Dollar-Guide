@@ -1465,14 +1465,16 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
       const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
       if (cands.length) chosen = cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
     } else if (strategy==='smart') {
-      // Smart: among all paychecks on or before due date, pick one with enough balance.
-      // If none have enough, pick the one with most remaining (spread the damage).
-      const elig  = sorted.filter(p=>p.date.getTime()<=dueDate.getTime())
-      const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
-      if (cands.length) {
-        const canCover = cands.filter(p=>map.get(p.dateStr).remaining>=bill.amount)
-        chosen = (canCover.length ? canCover : cands)
-          .reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
+      // Smart: start from the CLOSEST paycheck before/on due date.
+      // Only go further back if the closest one can't cover the bill.
+      const elig = sorted.filter(p=>p.date.getTime()<=dueDate.getTime())
+      if (!elig.length) {
+        chosen = sorted.find(p=>p.date>dueDate) ?? null
+      } else {
+        // Try closest first, step back only if over budget
+        const byClosest = [...elig].reverse()
+        chosen = byClosest.find(p=>map.get(p.dateStr).remaining>=bill.amount)
+              || byClosest[0] // fallback: closest even if it goes over
       }
     } else {
       // proximity: last paycheck on or before due date (same day counts)
@@ -1558,9 +1560,7 @@ function openReassign(billId, billName, currentDate) {
   document.getElementById('reassign-bill-id').value = billId
   document.getElementById('reassign-bill-name').textContent = billName
   const allPc = S.schedules.flatMap(s=>genPayDates(s,3)).sort((a,b)=>a.date-b.date)
-  const today = new Date(); today.setHours(0,0,0,0)
-  const upcoming = allPc.filter(p=>p.date>=today)
-  document.getElementById('reassign-options').innerHTML = upcoming.map(p=>`
+  document.getElementById('reassign-options').innerHTML = allPc.map(p=>`
     <div class="reassign-option ${p.dateStr===currentDate?'active':''}" onclick="saveReassign('${billId}','${p.dateStr}')">
       <div>
         <div class="reassign-option-date">${p.label}</div>
