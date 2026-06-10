@@ -1708,20 +1708,12 @@ async function sendTestEmail() {
   clearAlert('reminder-alert')
 
   try {
-    const res = await fetch(
-      `https://otuzlghhrvfvapmiyvgi.supabase.co/functions/v1/super-handler`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dXpsZ2hocnZmdmFwbWl5dmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzcxNzUsImV4cCI6MjA5NjYxMzE3NX0.VYgdsjv9GL7DZvVxuLxuSdzlk66ClbiT8U9LIef7zj4`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ test: true, user_id: S.user.id }),
-      }
-    )
-    const data = await res.json()
-    if (data.success) showAlert('reminder-alert', '✓ Test email sent! Check your inbox.', 'success')
-    else showAlert('reminder-alert', 'Failed: ' + (data.error || 'unknown error'), 'error')
+    const { data, error } = await db.functions.invoke('super-handler', {
+      body: { test: true, user_id: S.user.id }
+    })
+    if (error) showAlert('reminder-alert', 'Failed: ' + error.message, 'error')
+    else if (data?.success) showAlert('reminder-alert', '✓ Test email sent! Check your inbox.', 'success')
+    else showAlert('reminder-alert', 'Unexpected response: ' + JSON.stringify(data), 'error')
   } catch(e) {
     showAlert('reminder-alert', 'Error: ' + (e instanceof Error ? e.message : String(e)), 'error')
   }
