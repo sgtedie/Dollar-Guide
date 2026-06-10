@@ -4,17 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dollar Guide</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23edf2fb'/%3E%3Ccircle cx='32' cy='32' r='28' fill='white' stroke='%230a1f5c' stroke-width='2'/%3E%3Cpolygon points='32,6 35,26 32,24 29,26' fill='%23c8102e'/%3E%3Cpolygon points='32,58 35,38 32,40 29,38' fill='%234a6fa5'/%3E%3Cpolygon points='6,32 26,29 24,32 26,35' fill='%234a6fa5'/%3E%3Cpolygon points='58,32 38,29 40,32 38,35' fill='%234a6fa5'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23c8102e'/%3E%3Ctext x='32' y='37' text-anchor='middle' font-family='sans-serif' font-size='11' font-weight='bold' fill='%230a1f5c'%3E%24%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23102A43'/%3E%3Ccircle cx='32' cy='32' r='28' fill='%23F8F4F0' stroke='%23102A43' stroke-width='2'/%3E%3Cpolygon points='32,6 35,26 32,24 29,26' fill='%23D4AF37'/%3E%3Cpolygon points='32,58 35,38 32,40 29,38' fill='%2364748B'/%3E%3Cpolygon points='6,32 26,29 24,32 26,35' fill='%2364748B'/%3E%3Cpolygon points='58,32 38,29 40,32 38,35' fill='%2364748B'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23102A43'/%3E%3Ctext x='32' y='37' text-anchor='middle' font-family='sans-serif' font-size='11' font-weight='bold' fill='%23D4AF37'%3E%24%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg:#edf2fb; --surface:#ffffff; --surface2:#dce8f7; --border:#b8cce4;
-      --text:#0a1f5c; --muted:#4a6fa5;
-      --accent:#c8102e; --accent-dark:#a00d24; --accent-bg:rgba(200,16,46,0.08);
-      --blue:#1d4ed8; --blue-bg:rgba(29,78,216,0.08);
-      --amber:#d97706; --amber-bg:rgba(217,119,6,0.08);
-      --success:#16a34a; --success-bg:rgba(22,163,74,0.08);
-      --danger:#c8102e; --danger-bg:rgba(200,16,46,0.08);
+      --bg:#F8F4F0;         /* warm off-white */
+      --surface:#FFFFFF;
+      --surface2:#EDE8E3;   /* warm light beige */
+      --border:#CFC9C2;     /* warm border */
+      --text:#0F172A;       /* dark navy text */
+      --muted:#64748B;      /* soft secondary */
+      --navy:#102A43;       /* deep navy — header, structure */
+      --accent:#D4AF37;     /* rich gold — action, active */
+      --accent-dark:#B8971F;
+      --accent-bg:rgba(212,175,55,0.13);
+      --blue:#102A43;       /* reuse navy for "blue" slots */
+      --blue-bg:rgba(16,42,67,0.08);
+      --amber:#D4AF37;      /* gold for warnings too */
+      --amber-bg:rgba(212,175,55,0.12);
+      --success:#006D77;    /* deep teal — surplus, growth */
+      --success-bg:rgba(0,109,119,0.10);
+      --danger:#E76F51;     /* soft red-orange — shortfall */
+      --danger-bg:rgba(231,111,81,0.10);
       --radius:14px; --radius-sm:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -54,23 +65,25 @@
     /* ── Alerts ── */
     .alert{padding:11px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:14px}
     .alert-error{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(200,16,46,.3)}
-    .alert-success{background:var(--success-bg);color:var(--success);border:1px solid rgba(22,163,74,.3)}
+    .alert-success{background:var(--success-bg);color:var(--success);border:1px solid rgba(0,109,119,.3)}
     .hidden{display:none !important}
 
     /* ── App shell ── */
     #app{display:none;flex-direction:column;min-height:100vh}
 
     /* ── Top header ── */
-    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
+    .app-header{background:var(--navy);border-bottom:none;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
     .header-brand{display:flex;align-items:center;gap:8px}
-    .signout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:6px 10px;border-radius:8px;font-weight:500}
-    .signout-btn:hover{background:var(--surface2);color:var(--text)}
+    .header-brand div{color:#fff}
+    #hdr-slogan{color:rgba(255,255,255,0.55)!important}
+    .signout-btn{background:none;border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.75);cursor:pointer;font-size:12px;padding:5px 10px;border-radius:8px;font-weight:500}
+    .signout-btn:hover{background:rgba(255,255,255,0.12);color:#fff}
 
     /* ── Tab strip ── */
-    .tab-strip{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:57px;z-index:20}
+    .tab-strip{background:var(--surface);border-bottom:2px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:57px;z-index:20}
     .tab-strip::-webkit-scrollbar{display:none}
-    .tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 16px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0;transition:color .15s;background:none;border-left:none;border-right:none;border-top:none;text-transform:uppercase;letter-spacing:.4px}
-    .tab-item.on{color:var(--accent);border-bottom-color:var(--accent)}
+    .tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0;transition:all .15s;background:none;border-left:none;border-right:none;border-top:none;text-transform:uppercase;letter-spacing:.4px}
+    .tab-item.on{color:var(--navy);border-bottom-color:var(--accent)}
     .tab-item svg{width:18px;height:18px}
 
     /* ── Page content ── */
@@ -129,9 +142,9 @@
     /* ── Priority ── */
     .prio-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
     .prio-btn{padding:9px 6px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
-    .prio-btn.on.e{border-color:#c8102e;background:rgba(200,16,46,.08);color:#c8102e}
-    .prio-btn.on.i{border-color:#d97706;background:rgba(217,119,6,.08);color:#d97706}
-    .prio-btn.on.o{border-color:#1d4ed8;background:rgba(29,78,216,.08);color:#1d4ed8}
+    .prio-btn.on.e{border-color:#102A43;background:rgba(16,42,67,.1);color:#102A43}
+    .prio-btn.on.i{border-color:#D4AF37;background:rgba(212,175,55,.13);color:#B8971F}
+    .prio-btn.on.o{border-color:#006D77;background:rgba(0,109,119,.1);color:#006D77}
 
     /* ── Bills list ── */
     .bill-row{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;transition:opacity .2s}
@@ -269,13 +282,13 @@
 <!-- ══ AUTH ══ -->
 <div id="auth-screen">
   <svg width="72" height="72" viewBox="0 0 64 64" fill="none" style="margin-bottom:12px;">
-    <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2"/>
-    <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
-    <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
-    <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
-    <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
-    <circle cx="32" cy="32" r="4" fill="#c8102e"/>
-    <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#0a1f5c">$</text>
+    <circle cx="32" cy="32" r="30" fill="#F8F4F0" stroke="#102A43" stroke-width="2"/>
+    <polygon points="32,8 35,28 32,26 29,28" fill="#D4AF37"/>
+    <polygon points="32,56 35,36 32,38 29,36" fill="#64748B" opacity="0.7"/>
+    <polygon points="8,32 28,29 26,32 28,35" fill="#64748B" opacity="0.7"/>
+    <polygon points="56,32 36,29 38,32 36,35" fill="#64748B" opacity="0.7"/>
+    <circle cx="32" cy="32" r="4" fill="#102A43"/>
+    <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#D4AF37">$</text>
   </svg>
   <h1 class="auth-title">Dollar Guide</h1>
   <p class="auth-sub">Guiding every dollar to where it belongs.</p>
@@ -434,9 +447,9 @@
       </div>
       <div class="report-card">
         <div class="report-title">Priority Guide</div>
-        <div class="setting-row"><div><div class="setting-label" style="color:#c8102e;">● Essential</div><div class="setting-sub">Rent, utilities, insurance — assigned first</div></div></div>
-        <div class="setting-row"><div><div class="setting-label" style="color:#d97706;">● Important</div><div class="setting-sub">Phone, internet, debt payments</div></div></div>
-        <div class="setting-row" style="border-bottom:none;"><div><div class="setting-label" style="color:#1d4ed8;">● Optional</div><div class="setting-sub">Subscriptions, gym — assigned last</div></div></div>
+        <div class="setting-row"><div><div class="setting-label" style="color:#102A43;">● Essential</div><div class="setting-sub">Rent, utilities, insurance — assigned first</div></div></div>
+        <div class="setting-row"><div><div class="setting-label" style="color:#B8971F;">● Important</div><div class="setting-sub">Phone, internet, debt payments</div></div></div>
+        <div class="setting-row" style="border-bottom:none;"><div><div class="setting-label" style="color:#006D77;">● Optional</div><div class="setting-sub">Subscriptions, gym — assigned last</div></div></div>
       </div>
     </div>
 
@@ -497,9 +510,9 @@
     <div class="fg">
       <label>Priority</label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <button class="prio-btn on e" data-p="essential" onclick="setPriority(this)"><span class="prio-dot" style="background:#c8102e;"></span>Essential</button>
-        <button class="prio-btn i" data-p="important" onclick="setPriority(this)"><span class="prio-dot" style="background:#d97706;"></span>Important</button>
-        <button class="prio-btn o" data-p="optional" onclick="setPriority(this)"><span class="prio-dot" style="background:#1d4ed8;"></span>Optional</button>
+        <button class="prio-btn on e" data-p="essential" onclick="setPriority(this)"><span class="prio-dot" style="background:#102A43;"></span>Essential</button>
+        <button class="prio-btn i" data-p="important" onclick="setPriority(this)"><span class="prio-dot" style="background:#D4AF37;"></span>Important</button>
+        <button class="prio-btn o" data-p="optional" onclick="setPriority(this)"><span class="prio-dot" style="background:#006D77;"></span>Optional</button>
       </div>
       <p style="font-size:11px;color:var(--muted);margin-top:6px;">Essentials get funded before important, important before optional.</p>
     </div>
@@ -618,7 +631,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const PRIO_ORDER = { essential:0, important:1, optional:2 }
-const PRIO_COLOR = { essential:'#c8102e', important:'#d97706', optional:'#1d4ed8' }
+const PRIO_COLOR = { essential:'#102A43', important:'#D4AF37', optional:'#006D77' }
 const PRIO_LABEL = { essential:'Essential', important:'Important', optional:'Optional' }
 
 const TEMPLATES = {
@@ -1031,9 +1044,9 @@ function renderReports() {
 
   // ── Donut chart: income allocation ──
   const donutSvg = monthIncome > 0 ? buildDonut([
-    { label:'Bills',   value:totalBills,   color:'#c8102e' },
-    { label:'Buckets', value:totalBuckets, color:'#1d4ed8' },
-    { label:'Free',    value:freeAmt,      color:'#16a34a' },
+    { label:'Bills',   value:totalBills,   color:'#E76F51' },
+    { label:'Buckets', value:totalBuckets, color:'#102A43' },
+    { label:'Free',    value:freeAmt,      color:'#006D77' },
   ], monthIncome) : ''
 
   // ── Bar chart: paychecks vs bills ──
@@ -1060,9 +1073,9 @@ function renderReports() {
       <div class="chart-wrap" style="display:flex;align-items:center;gap:20px;">
         ${donutSvg}
         <div class="chart-legend">
-          <div class="legend-item"><span class="legend-dot" style="background:#c8102e;"></span>Bills $${fmt(totalBills)}</div>
-          ${totalBuckets>0?`<div class="legend-item"><span class="legend-dot" style="background:#1d4ed8;"></span>Buckets $${fmt(totalBuckets)}</div>`:''}
-          <div class="legend-item"><span class="legend-dot" style="background:#16a34a;"></span>Free $${fmt(freeAmt)}</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#E76F51;"></span>Bills $${fmt(totalBills)}</div>
+          ${totalBuckets>0?`<div class="legend-item"><span class="legend-dot" style="background:#102A43;"></span>Buckets $${fmt(totalBuckets)}</div>`:''}
+          <div class="legend-item"><span class="legend-dot" style="background:#006D77;"></span>Free $${fmt(freeAmt)}</div>
         </div>
       </div>
     </div>`:''}
@@ -1085,7 +1098,7 @@ function renderReports() {
 
     <div class="report-card">
       <div class="report-title">By Priority</div>
-      ${[['essential','Essential','#c8102e'],['important','Important','#d97706'],['optional','Optional','#1d4ed8']].map(([k,label,color])=>`
+      ${[['essential','Essential','#102A43'],['important','Important','#D4AF37'],['optional','Optional','#006D77']].map(([k,label,color])=>`
         <div class="cat-row">
           <div class="cat-name" style="color:${color};">● ${label}</div>
           <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio[k]/totalBills)*100):0}%;background:${color};"></div></div>
@@ -1131,19 +1144,19 @@ function buildBarChart(paychecks, groups) {
     const x     = i*(bw+gap)+pad/2
     const label = pc.date.toLocaleDateString('en-US',{month:'short',day:'numeric'})
     return `
-      <rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH}" rx="4" fill="#dce8f7"/>
-      <rect x="${x}" y="${h-billH}" width="${bw}" height="${billH}" rx="4" fill="${over?'#c8102e':'#c8102e'}" opacity="${over?1:.8}"/>
-      ${rem>0?`<rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH-billH}" rx="4" fill="#16a34a" opacity=".7"/>`:''}
-      <text x="${x+bw/2}" y="${h+14}" text-anchor="middle" font-size="9" fill="#4a6fa5" font-family="sans-serif">${label}</text>
-      <text x="${x+bw/2}" y="${h-pcH-4}" text-anchor="middle" font-size="8" fill="${rem<0?'#c8102e':'#4a6fa5'}" font-family="sans-serif">$${Math.round(rem)}</text>`
+      <rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH}" rx="4" fill="#EDE8E3"/>
+      <rect x="${x}" y="${h-billH}" width="${bw}" height="${billH}" rx="4" fill="#E76F51" opacity=".85"/>
+      ${rem>0?`<rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH-billH}" rx="4" fill="#006D77" opacity=".75"/>`:''}
+      <text x="${x+bw/2}" y="${h+14}" text-anchor="middle" font-size="9" fill="#64748B" font-family="sans-serif">${label}</text>
+      <text x="${x+bw/2}" y="${h-pcH-4}" text-anchor="middle" font-size="8" fill="${rem<0?'#E76F51':'#006D77'}" font-family="sans-serif">$${Math.round(rem)}</text>`
   }).join('')
   return `<svg width="100%" viewBox="0 0 ${W} ${h+30}" style="overflow:visible;">
     ${bars}
     <line x1="0" y1="${h}" x2="${W}" y2="${h}" stroke="#b8cce4" stroke-width="1"/>
   </svg>
   <div class="chart-legend" style="margin-top:10px;">
-    <div class="legend-item"><span class="legend-dot" style="background:#16a34a;opacity:.7;"></span>Remaining</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#c8102e;opacity:.8;"></span>Bills due</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#006D77;opacity:.75;"></span>Remaining</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#E76F51;opacity:.85;"></span>Bills due</div>
   </div>`
 }
 
