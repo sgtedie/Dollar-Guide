@@ -239,6 +239,13 @@
     .reassign-option-date{font-weight:700;font-size:14px}
     .reassign-option-meta{font-size:12px;color:var(--muted);margin-top:2px}
 
+    /* ── Paycheck month navigator ── */
+    .pc-month-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+    .pc-nav-btn{background:none;border:none;cursor:pointer;color:var(--navy);display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;transition:background .15s}
+    .pc-nav-btn:hover{background:var(--surface2)}
+    .pc-nav-label{font-weight:700;font-size:15px;color:var(--navy);min-width:120px;text-align:center}
+    .pc-context-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px}
+
     /* ── Running balance strip ── */
     .balance-strip{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
     .balance-label{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
@@ -367,6 +374,15 @@
           <button class="strat-pill" id="sp-even" onclick="setStrat('even')">Even Split</button>
           <button class="strat-pill" id="sp-smart" onclick="setStrat('smart')">⚡ Smart</button>
         </div>
+      </div>
+      <div class="pc-month-nav" id="pc-month-nav" style="display:none;">
+        <button class="pc-nav-btn" onclick="shiftPcMonth(-1)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <span class="pc-nav-label" id="pc-nav-label">June 2026</span>
+        <button class="pc-nav-btn" onclick="shiftPcMonth(1)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
       </div>
       <div id="pc-list"></div>
       <div class="cf-section" id="cf-section" style="display:none;">
@@ -646,6 +662,9 @@ const TEMPLATES = {
 }
 
 const S = { user:null, bills:[], schedules:[], payments:[], overrides:[], buckets:[], strategy:'smart', authMode:'login' }
+let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
+
+function shiftPcMonth(dir) { pcPage += dir; renderPaychecks() }
 const NOW = new Date()
 const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
 
@@ -758,32 +777,64 @@ function setStrat(s) {
 function renderPaychecks() {
   const el=document.getElementById('pc-list')
   const cfSection=document.getElementById('cf-section')
-  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; return }
-  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; return }
-  cfSection.style.display='block'
+  const navEl=document.getElementById('pc-month-nav')
+  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; return }
+  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; return }
+  cfSection.style.display='block'; if(navEl) navEl.style.display='flex'
 
-  const allPc = S.schedules.flatMap(s => genPayDates(s, 3)); allPc.sort((a,b)=>a.date-b.date)
+  // Generate 6 months so navigation has data to pull from
+  const allPc = S.schedules.flatMap(s => genPayDates(s, 6)); allPc.sort((a,b)=>a.date-b.date)
   const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
-  let groups
-  if (S.strategy==='proximity') groups = byDueDate(sortedBills,allPc,3)
-  else if (S.strategy==='even') groups = evenly(sortedBills,allPc,3)
-  else groups = smartAssign(sortedBills,allPc,3)
-  groups = applyOverrides(groups, allPc)
+  let allGroups
+  if (S.strategy==='proximity') allGroups = byDueDate(sortedBills,allPc,6)
+  else if (S.strategy==='even') allGroups = evenly(sortedBills,allPc,6)
+  else allGroups = smartAssign(sortedBills,allPc,6)
+  allGroups = applyOverrides(allGroups, allPc)
+
+  // Reference month based on navigation offset
+  const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
+  const refY=refDate.getFullYear(), refM=refDate.getMonth()
+  const prevY=refM===0?refY-1:refY, prevM=refM===0?11:refM-1
+  const nextY=refM===11?refY+1:refY, nextM=refM===11?0:refM+1
+
+  const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
+  const prevGroups = allGroups.filter(g=>inM(g,prevY,prevM))
+  const curGroups  = allGroups.filter(g=>inM(g,refY,refM))
+  const nextGroups = allGroups.filter(g=>inM(g,nextY,nextM))
+
+  // Window: last paycheck of prev month + all this month + first of next month
+  const window = [
+    ...(prevGroups.length ? [prevGroups[prevGroups.length-1]] : []),
+    ...curGroups,
+    ...(nextGroups.length ? [nextGroups[0]] : []),
+  ]
+
+  // Update month navigator label
+  if(navEl) document.getElementById('pc-nav-label').textContent =
+    refDate.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+
+  if (!window.length) {
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No paycheck data for this period.<br>Use the arrows to navigate.</div></div>`; return
+  }
+
   const paidSet=new Set(S.payments.map(p=>p.bill_id)), todayMs=new Date().setHours(0,0,0,0)
   let foundNext=false
 
-  el.innerHTML = groups.map(g => {
-    const isPast=g.paycheck.date.getTime()<todayMs, isNext=!isPast&&!foundNext; if(isNext) foundNext=true
+  el.innerHTML = window.map(g => {
+    const isPast=g.paycheck.date.getTime()<todayMs
+    const isNext=!isPast&&!foundNext; if(isNext) foundNext=true
+    const isContext=!inM(g,refY,refM)   // prev/next month context paycheck
     const over=g.remaining<0, pct=Math.min((g.totalBills/g.paycheck.netAmount)*100,100)
     const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
+
     const rows=g.bills.map(ab => {
       const paid=paidSet.has(ab.bill.id), pc=PRIO_COLOR[ab.bill.priority||'essential']
-      const isOverridden = S.overrides.some(o=>o.bill_id===ab.bill.id)
+      const isOverridden=S.overrides.some(o=>o.bill_id===ab.bill.id)
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
           <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
           <div>
-            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--blue);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}</div>
+            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}</div>
             <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
           </div>
         </div>
@@ -793,11 +844,20 @@ function renderPaychecks() {
         </div>
       </div>`
     }).join('')
-    return `<div class="pc-card ${isNext?'next':''}">
+
+    // Context paychecks (prev/next month) show dimmed with a label
+    const contextLabel = isContext && isPast
+      ? `<span class="pc-context-chip">← Last paycheck of ${new Date(prevY,prevM,1).toLocaleDateString('en-US',{month:'short'})}</span><br>`
+      : isContext && !isPast
+      ? `<span class="pc-context-chip">First of ${new Date(nextY,nextM,1).toLocaleDateString('en-US',{month:'short'})} →</span><br>`
+      : ''
+
+    return `<div class="pc-card ${isNext?'next':''}" style="${isContext?'opacity:.75;':''}" >
       <div class="pc-header" onclick="togglePCBody(this)">
         <div>
+          ${contextLabel}
           ${isNext?'<span class="chip chip-next">▶ Next Paycheck</span><br>':''}
-          ${isPast?'<span class="chip chip-past">Past</span><br>':''}
+          ${isPast&&!isContext?'<span class="chip chip-past">Past</span><br>':''}
           <div class="pc-date">${g.paycheck.label} ${srcLabel}</div>
           <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due</div>
         </div>
@@ -806,7 +866,7 @@ function renderPaychecks() {
           <div class="pc-rem ${over?'c-danger':'c-success'}">$${fmt(g.remaining)} left</div>
         </div>
       </div>
-      <div class="pc-body">
+      <div class="pc-body" style="display:${isNext||(!isPast&&!isContext)?'block':'none'}">
         ${rows}
         <div class="prog-wrap">
           <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
@@ -815,7 +875,7 @@ function renderPaychecks() {
         </div>
       </div>
     </div>`
-  }).join('') || `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No upcoming assignments.</div></div>`
+  }).join('')
 }
 
 function togglePCBody(hdr) { const b=hdr.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none' }
