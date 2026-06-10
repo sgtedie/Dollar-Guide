@@ -1723,7 +1723,7 @@ async function sendTestEmail() {
     if (data.success) showAlert('reminder-alert', '✓ Test email sent! Check your inbox.', 'success')
     else showAlert('reminder-alert', 'Failed: ' + (data.error || 'unknown error'), 'error')
   } catch(e) {
-    showAlert('reminder-alert', 'Could not reach the function. Make sure it is deployed.', 'error')
+    showAlert('reminder-alert', 'Error: ' + (e instanceof Error ? e.message : String(e)), 'error')
   }
 
   btn.disabled = false; btn.textContent = '📧 Send Test Email'
