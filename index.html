@@ -7,19 +7,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #0a0f1e;
-      --surface: #131929;
-      --surface2: #1c2539;
-      --border: #2a3550;
-      --text: #f0f4ff;
-      --muted: #8896b3;
-      --green: #22c55e;
-      --green-dark: #16a34a;
-      --green-bg: rgba(34,197,94,0.12);
-      --red: #ef4444;
-      --red-bg: rgba(239,68,68,0.12);
-      --yellow: #f59e0b;
-      --yellow-bg: rgba(245,158,11,0.12);
+      --bg: #edf2fb;
+      --surface: #ffffff;
+      --surface2: #dce8f7;
+      --border: #b8cce4;
+      --text: #0a1f5c;
+      --muted: #4a6fa5;
+      --green: #c8102e;
+      --green-dark: #a00d24;
+      --green-bg: rgba(200,16,46,0.08);
+      --red: #c8102e;
+      --red-bg: rgba(200,16,46,0.08);
+      --yellow: #1d4ed8;
+      --yellow-bg: rgba(29,78,216,0.08);
       --radius: 14px;
       --radius-sm: 10px;
     }
@@ -186,17 +186,17 @@
 <div id="auth-screen">
   <div class="auth-icon">
     <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-      <circle cx="32" cy="32" r="30" fill="#0f2a1a" stroke="#22c55e" stroke-width="2"/>
-      <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e"/>
-      <polygon points="32,56 35,36 32,38 29,36" fill="#8896b3" opacity="0.7"/>
-      <polygon points="8,32 28,29 26,32 28,35" fill="#8896b3" opacity="0.7"/>
-      <polygon points="56,32 36,29 38,32 36,35" fill="#8896b3" opacity="0.7"/>
-      <circle cx="32" cy="32" r="4" fill="#22c55e"/>
+      <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2"/>
+      <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
+      <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
+      <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
+      <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
+      <circle cx="32" cy="32" r="4" fill="#c8102e"/>
       <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
     </svg>
   </div>
   <h1 class="auth-title">Dollar Guide</h1>
-  <p class="auth-sub">Your smart money compass</p>
+  <p class="auth-sub">Guiding every dollar to where it belongs.</p>
   <div class="card">
     <div class="toggle-row">
       <button class="toggle-btn on" id="tab-login" onclick="setMode('login')">Sign In</button>
@@ -214,12 +214,12 @@
   <div class="app-header">
     <div class="header-brand">
       <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
-        <circle cx="32" cy="32" r="30" fill="#0f2a1a" stroke="#22c55e" stroke-width="2.5"/>
-        <polygon points="32,8 35,28 32,26 29,28" fill="#22c55e"/>
-        <polygon points="32,56 35,36 32,38 29,36" fill="#8896b3" opacity="0.8"/>
-        <polygon points="8,32 28,29 26,32 28,35" fill="#8896b3" opacity="0.8"/>
-        <polygon points="56,32 36,29 38,32 36,35" fill="#8896b3" opacity="0.8"/>
-        <circle cx="32" cy="32" r="4" fill="#22c55e"/>
+        <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2.5"/>
+        <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
+        <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
+        <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
+        <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
+        <circle cx="32" cy="32" r="4" fill="#c8102e"/>
         <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
       </svg>
       <span id="hdr-title">Dollar Guide</span>
