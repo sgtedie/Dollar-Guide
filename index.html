@@ -413,7 +413,6 @@
         <span class="sec-title">Paychecks</span>
         <div class="strat-wrap">
           <button class="strat-pill on" id="sp-proximity" onclick="setStrat('proximity')">By Due Date</button>
-          <button class="strat-pill" id="sp-even" onclick="setStrat('even')">Even Split</button>
           <button class="strat-pill" id="sp-smart" onclick="setStrat('smart')">⚡ Smart</button>
         </div>
       </div>
@@ -904,7 +903,6 @@ function renderSummary() {
 function setStrat(s) {
   S.strategy=s
   document.getElementById('sp-proximity').classList.toggle('on', s==='proximity')
-  document.getElementById('sp-even').classList.toggle('on', s==='even')
   document.getElementById('sp-smart').classList.toggle('on', s==='smart')
   renderPaychecks()
 }
@@ -1437,7 +1435,9 @@ function updateIncomePreview() {
 // Each bill appears exactly once. Paycheck can be previous month (for bills due on the 1st).
 function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const refStart = new Date(refYear, refMonth, 1)
-  const refEnd   = new Date(refYear, refMonth + 1, 0)
+  // Extend end to the 7th of next month so the last paycheck of this month
+  // can absorb early-next-month bills (same as May 25 absorbing June 1 bills)
+  const refEnd   = new Date(refYear, refMonth + 1, 7)
 
   // One occurrence per bill for the ref month
   const occurrences = []
