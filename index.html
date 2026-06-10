@@ -1435,9 +1435,9 @@ function updateIncomePreview() {
 // Each bill appears exactly once. Paycheck can be previous month (for bills due on the 1st).
 function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const refStart = new Date(refYear, refMonth, 1)
-  // Extend end to the 7th of next month so the last paycheck of this month
-  // can absorb early-next-month bills (same as May 25 absorbing June 1 bills)
-  const refEnd   = new Date(refYear, refMonth + 1, 7)
+  // Extend end to the 14th of next month to capture bills due in the first
+  // two weeks of next month (e.g. Auto Insurance due the 8th)
+  const refEnd   = new Date(refYear, refMonth + 1, 14)
 
   // One occurrence per bill for the ref month
   const occurrences = []
@@ -1465,16 +1465,34 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
       const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
       if (cands.length) chosen = cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
     } else if (strategy==='smart') {
-      // Smart: start from the CLOSEST paycheck before/on due date.
-      // Only go further back if the closest one can't cover the bill.
-      const elig = sorted.filter(p=>p.date.getTime()<=dueDate.getTime())
-      if (!elig.length) {
-        chosen = sorted.find(p=>p.date>dueDate) ?? null
+      // Smart rules:
+      // 1. Assign to the NATURAL paycheck = closest on or before due date
+      // 2. If natural is over budget → step back ONE paycheck and use it if it has room
+      // 3. If still no room → accept over-budget on the natural paycheck
+      // Bills are priority-sorted so essentials always claim their spot first.
+      let naturalIdx = -1
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i].date.getTime() <= dueDate.getTime()) naturalIdx = i
+        else break
+      }
+      if (naturalIdx === -1) {
+        // No paycheck before due date — use first one after
+        chosen = sorted.find(p => p.date > dueDate) ?? null
       } else {
-        // Try closest first, step back only if over budget
-        const byClosest = [...elig].reverse()
-        chosen = byClosest.find(p=>map.get(p.dateStr).remaining>=bill.amount)
-              || byClosest[0] // fallback: closest even if it goes over
+        const natural   = sorted[naturalIdx]
+        const natRemain = map.get(natural.dateStr).remaining
+        if (natRemain >= bill.amount) {
+          // Natural paycheck can cover it ✓
+          chosen = natural
+        } else if (naturalIdx > 0) {
+          // Natural is tight — try the ONE paycheck before it
+          const prev      = sorted[naturalIdx - 1]
+          const prevRemain = map.get(prev.dateStr).remaining
+          chosen = prevRemain >= bill.amount ? prev : natural
+        } else {
+          // No previous paycheck — accept over-budget on natural
+          chosen = natural
+        }
       }
     } else {
       // proximity: last paycheck on or before due date (same day counts)
