@@ -222,7 +222,10 @@
         <circle cx="32" cy="32" r="4" fill="#c8102e"/>
         <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
       </svg>
-      <span id="hdr-title">Dollar Guide</span>
+      <div>
+        <div id="hdr-title" style="font-size:17px;font-weight:800;line-height:1.1;">Dollar Guide</div>
+        <div id="hdr-slogan" style="font-size:10px;color:var(--muted);font-style:italic;font-weight:400;">Guiding every dollar to where it belongs.</div>
+      </div>
     </div>
     <button class="signout-btn" onclick="doSignOut()">Sign out</button>
   </div>
@@ -859,6 +862,7 @@ function goPage(p) {
   document.getElementById(`pg-${p}`).classList.add('on')
   document.getElementById(`nb-${p}`).classList.add('on')
   document.getElementById('hdr-title').textContent = PAGE_TITLES[p]
+  document.getElementById('hdr-slogan').style.display = p === 'dashboard' ? 'block' : 'none'
 }
 
 // ── Overlay helpers ───────────────────────────────
