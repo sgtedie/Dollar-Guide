@@ -218,6 +218,12 @@
     .modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px}
     .modal-title{font-size:20px;font-weight:800;margin-bottom:20px}
 
+    /* ── Icon picker ── */
+    .icon-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:4px}
+    .icon-opt{font-size:22px;padding:8px 4px;border:1.5px solid var(--border);border-radius:9px;background:var(--surface2);cursor:pointer;transition:all .12s;line-height:1;display:flex;align-items:center;justify-content:center}
+    .icon-opt:hover{border-color:var(--accent);background:var(--accent-bg);transform:scale(1.1)}
+    .icon-opt.on{border-color:var(--navy);background:rgba(16,42,67,.1);box-shadow:0 0 0 2px var(--navy)}
+
     /* ── Buckets ── */
     .bucket-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
     .bucket-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -588,8 +594,52 @@
       <input type="text" id="bk-name" placeholder="e.g. Emergency Fund, Shop Build, Vacation">
     </div>
     <div class="fg">
-      <label>Icon (emoji)</label>
-      <input type="text" id="bk-icon" placeholder="🪣" maxlength="2" style="font-size:22px;text-align:center;">
+      <label>Choose an Icon</label>
+      <div class="icon-picker" id="icon-picker">
+        <!-- Emergency / Safety -->
+        <button class="icon-opt" data-i="🚨" onclick="setIcon(this)" title="Emergency">🚨</button>
+        <button class="icon-opt" data-i="🏥" onclick="setIcon(this)" title="Medical">🏥</button>
+        <button class="icon-opt" data-i="☂️" onclick="setIcon(this)" title="Rainy Day">☂️</button>
+        <button class="icon-opt" data-i="🛡️" onclick="setIcon(this)" title="Protection">🛡️</button>
+        <button class="icon-opt" data-i="💊" onclick="setIcon(this)" title="Healthcare">💊</button>
+        <button class="icon-opt" data-i="🔒" onclick="setIcon(this)" title="Security">🔒</button>
+        <!-- Vehicles -->
+        <button class="icon-opt" data-i="🚗" onclick="setIcon(this)" title="Car">🚗</button>
+        <button class="icon-opt" data-i="🚜" onclick="setIcon(this)" title="Tractor">🚜</button>
+        <button class="icon-opt" data-i="✈️" onclick="setIcon(this)" title="Travel">✈️</button>
+        <button class="icon-opt" data-i="🚢" onclick="setIcon(this)" title="Boat">🚢</button>
+        <button class="icon-opt" data-i="🏍️" onclick="setIcon(this)" title="Motorcycle">🏍️</button>
+        <button class="icon-opt" data-i="🚐" onclick="setIcon(this)" title="Van / RV">🚐</button>
+        <!-- Home / Property -->
+        <button class="icon-opt" data-i="🏠" onclick="setIcon(this)" title="Home">🏠</button>
+        <button class="icon-opt" data-i="🏗️" onclick="setIcon(this)" title="Shop Build">🏗️</button>
+        <button class="icon-opt" data-i="🔧" onclick="setIcon(this)" title="Repairs">🔧</button>
+        <button class="icon-opt" data-i="🌳" onclick="setIcon(this)" title="Land / Yard">🌳</button>
+        <button class="icon-opt" data-i="🏡" onclick="setIcon(this)" title="House Goals">🏡</button>
+        <button class="icon-opt" data-i="🔑" onclick="setIcon(this)" title="New Home">🔑</button>
+        <!-- Family / Life -->
+        <button class="icon-opt" data-i="👶" onclick="setIcon(this)" title="Baby / Kids">👶</button>
+        <button class="icon-opt" data-i="🎓" onclick="setIcon(this)" title="Education">🎓</button>
+        <button class="icon-opt" data-i="💒" onclick="setIcon(this)" title="Wedding">💒</button>
+        <button class="icon-opt" data-i="🐕" onclick="setIcon(this)" title="Pets">🐕</button>
+        <button class="icon-opt" data-i="🐎" onclick="setIcon(this)" title="Horse">🐎</button>
+        <button class="icon-opt" data-i="⚽" onclick="setIcon(this)" title="Kids Activities">⚽</button>
+        <!-- Fun / Goals -->
+        <button class="icon-opt" data-i="🏖️" onclick="setIcon(this)" title="Vacation">🏖️</button>
+        <button class="icon-opt" data-i="🎮" onclick="setIcon(this)" title="Gaming">🎮</button>
+        <button class="icon-opt" data-i="🎸" onclick="setIcon(this)" title="Music / Hobbies">🎸</button>
+        <button class="icon-opt" data-i="🎨" onclick="setIcon(this)" title="Creative">🎨</button>
+        <button class="icon-opt" data-i="🏕️" onclick="setIcon(this)" title="Camping">🏕️</button>
+        <button class="icon-opt" data-i="🎁" onclick="setIcon(this)" title="Gifts">🎁</button>
+        <!-- Finance / Growth -->
+        <button class="icon-opt on" data-i="🪣" onclick="setIcon(this)" title="General Bucket">🪣</button>
+        <button class="icon-opt" data-i="💰" onclick="setIcon(this)" title="Savings">💰</button>
+        <button class="icon-opt" data-i="📈" onclick="setIcon(this)" title="Investments">📈</button>
+        <button class="icon-opt" data-i="🌱" onclick="setIcon(this)" title="Growth">🌱</button>
+        <button class="icon-opt" data-i="⭐" onclick="setIcon(this)" title="Goals">⭐</button>
+        <button class="icon-opt" data-i="💎" onclick="setIcon(this)" title="Luxury">💎</button>
+      </div>
+      <input type="hidden" id="bk-icon" value="🪣">
     </div>
     <div class="form-row">
       <div class="fg">
@@ -1454,22 +1504,38 @@ function renderBuckets() {
   }).join('')
 }
 
+function setIcon(btn) {
+  document.querySelectorAll('.icon-opt').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  document.getElementById('bk-icon').value = btn.dataset.i
+}
+
 function openBucketModal(editId) {
   clearAlert('bk-alert')
   document.getElementById('bk-id').value = editId||''
   document.getElementById('bucket-modal-title').textContent = editId ? 'Edit Bucket' : 'Add Bucket'
   document.getElementById('bk-delete-btn').classList.toggle('hidden', !editId)
+
+  const selectIcon = (icon) => {
+    document.querySelectorAll('.icon-opt').forEach(b => {
+      b.classList.toggle('on', b.dataset.i === icon)
+    })
+    document.getElementById('bk-icon').value = icon
+  }
+
   if (editId) {
     const b = S.buckets.find(x=>x.id===editId)
     document.getElementById('bk-name').value    = b.name
-    document.getElementById('bk-icon').value    = b.icon||'🪣'
     document.getElementById('bk-goal').value    = b.goal_amount||''
     document.getElementById('bk-contrib').value = b.monthly_contribution||''
     document.getElementById('bk-saved').value   = b.saved_amount||''
+    selectIcon(b.icon||'🪣')
   } else {
-    document.getElementById('bk-name').value=''; document.getElementById('bk-icon').value='🪣'
-    document.getElementById('bk-goal').value=''; document.getElementById('bk-contrib').value=''
+    document.getElementById('bk-name').value=''
+    document.getElementById('bk-goal').value=''
+    document.getElementById('bk-contrib').value=''
     document.getElementById('bk-saved').value=''
+    selectIcon('🪣')
   }
   document.getElementById('bucket-overlay').classList.remove('hidden')
   setTimeout(()=>document.getElementById('bk-name').focus(),100)
