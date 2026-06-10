@@ -485,6 +485,11 @@
           <div style="padding-bottom:14px;">
             <input type="email" id="rem-email" placeholder="or enter a different email" style="font-size:13px;padding:10px 12px;" onchange="saveReminderSettings()">
           </div>
+          <div style="padding-bottom:4px;">
+            <button class="btn btn-gray" id="rem-test-btn" onclick="sendTestEmail()" style="font-size:13px;padding:11px;">
+              📧 Send Test Email
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1695,6 +1700,33 @@ function updateReminderToggle() {
   track.style.background = enabled ? 'var(--success)' : 'var(--border)'
   thumb.style.transform  = enabled ? 'translateX(20px)' : 'translateX(0)'
   if (enabled) saveReminderSettings()
+}
+
+async function sendTestEmail() {
+  const btn = document.getElementById('rem-test-btn')
+  btn.disabled = true; btn.textContent = '⏳ Sending…'
+  clearAlert('reminder-alert')
+
+  try {
+    const res = await fetch(
+      `https://otuzlghhrvfvapmiyvgi.supabase.co/functions/v1/send-bill-reminders`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dXpsZ2hocnZmdmFwbWl5dmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzcxNzUsImV4cCI6MjA5NjYxMzE3NX0.VYgdsjv9GL7DZvVxuLxuSdzlk66ClbiT8U9LIef7zj4`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test: true, user_id: S.user.id }),
+      }
+    )
+    const data = await res.json()
+    if (data.success) showAlert('reminder-alert', '✓ Test email sent! Check your inbox.', 'success')
+    else showAlert('reminder-alert', 'Failed: ' + (data.error || 'unknown error'), 'error')
+  } catch(e) {
+    showAlert('reminder-alert', 'Could not reach the function. Make sure it is deployed.', 'error')
+  }
+
+  btn.disabled = false; btn.textContent = '📧 Send Test Email'
 }
 
 async function saveReminderSettings() {
