@@ -458,6 +458,37 @@
         </div>
       </div>
       <div class="report-card">
+        <div class="report-title">Bill Reminders</div>
+        <div id="reminder-alert" class="hidden" style="margin-bottom:12px;"></div>
+        <div class="setting-row">
+          <div><div class="setting-label">Email Reminders</div><div class="setting-sub">Get emailed before bills are due</div></div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+            <input type="checkbox" id="rem-enabled" style="opacity:0;width:0;height:0;" onchange="updateReminderToggle()">
+            <span id="rem-toggle-track" style="position:absolute;inset:0;background:var(--border);border-radius:99px;transition:background .2s;"></span>
+            <span id="rem-toggle-thumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>
+          </label>
+        </div>
+        <div id="rem-options" class="hidden">
+          <div class="setting-row">
+            <div><div class="setting-label">Remind me</div><div class="setting-sub">How many days before the due date</div></div>
+            <select id="rem-days" style="width:auto;padding:8px 32px 8px 12px;font-size:13px;" onchange="saveReminderSettings()">
+              <option value="1">1 day before</option>
+              <option value="2">2 days before</option>
+              <option value="3" selected>3 days before</option>
+              <option value="5">5 days before</option>
+              <option value="7">1 week before</option>
+            </select>
+          </div>
+          <div class="setting-row" style="border-bottom:none;">
+            <div><div class="setting-label">Send to</div><div class="setting-sub">Leave blank to use your account email</div></div>
+          </div>
+          <div style="padding-bottom:14px;">
+            <input type="email" id="rem-email" placeholder="or enter a different email" style="font-size:13px;padding:10px 12px;" onchange="saveReminderSettings()">
+          </div>
+        </div>
+      </div>
+
+      <div class="report-card">
         <div class="report-title">About</div>
         <div class="setting-row"><div class="setting-label">Dollar Guide</div><div class="setting-val">Version 2.0</div></div>
         <div class="setting-row"><div class="setting-label">Data</div><div class="setting-val">Stored securely in Supabase</div></div>
@@ -1314,7 +1345,7 @@ function goPage(p) {
   document.getElementById('hdr-slogan').style.display=p==='dashboard'?'block':'none'
   if (p==='reports') renderReports()
   if (p==='buckets') renderBuckets()
-  if (p==='settings') document.getElementById('settings-email').textContent=S.user?.email||'—'
+  if (p==='settings') { document.getElementById('settings-email').textContent=S.user?.email||'—'; loadReminderSettings() }
 }
 
 function closeOverlay(id) { document.getElementById(id).classList.add('hidden') }
@@ -1631,6 +1662,59 @@ function evenly(bills,paychecks,mo){
   const all=[]; for(const bill of bills) for(const dd of dueDates(bill,today,end)) all.push({bill,dueDate:dd}); all.sort((a,b)=>a.dueDate-b.dueDate)
   for(const {bill,dueDate} of all){ const elig=sorted.filter(p=>p.date<=dueDate); const cands=elig.length?elig:[sorted.find(p=>p.date>dueDate)].filter(Boolean); if(!cands.length) continue; const chosen=cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b); const g=map.get(chosen.dateStr); g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills }
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
+}
+
+// ── Reminder settings ─────────────────────────────
+let reminderSetting = null
+
+async function loadReminderSettings() {
+  const { data } = await db.from('reminder_settings').select('*').maybeSingle()
+  reminderSetting = data
+
+  const enabled = data?.enabled ?? false
+  const days    = data?.days_before ?? 3
+  const email   = data?.email_override ?? ''
+
+  const toggle = document.getElementById('rem-enabled')
+  const opts   = document.getElementById('rem-options')
+  if (!toggle || !opts) return
+
+  toggle.checked = enabled
+  document.getElementById('rem-days').value  = String(days)
+  document.getElementById('rem-email').value = email
+  updateReminderToggle()
+}
+
+function updateReminderToggle() {
+  const enabled = document.getElementById('rem-enabled')?.checked
+  const opts    = document.getElementById('rem-options')
+  const track   = document.getElementById('rem-toggle-track')
+  const thumb   = document.getElementById('rem-toggle-thumb')
+  if (!opts || !track || !thumb) return
+  opts.classList.toggle('hidden', !enabled)
+  track.style.background = enabled ? 'var(--success)' : 'var(--border)'
+  thumb.style.transform  = enabled ? 'translateX(20px)' : 'translateX(0)'
+  if (enabled) saveReminderSettings()
+}
+
+async function saveReminderSettings() {
+  const enabled = document.getElementById('rem-enabled')?.checked ?? false
+  const days    = parseInt(document.getElementById('rem-days')?.value || '3')
+  const email   = document.getElementById('rem-email')?.value.trim() || null
+
+  const payload = { enabled, days_before: days, email_override: email || null }
+  let err
+  if (reminderSetting) {
+    ({ error: err } = await db.from('reminder_settings').update(payload).eq('id', reminderSetting.id))
+  } else {
+    ({ error: err } = await db.from('reminder_settings').insert({ ...payload, user_id: S.user.id }))
+    if (!err) {
+      const { data } = await db.from('reminder_settings').select('*').maybeSingle()
+      reminderSetting = data
+    }
+  }
+  if (err) showAlert('reminder-alert', err.message, 'error')
+  else     showAlert('reminder-alert', enabled ? '✓ Reminders saved!' : '✓ Reminders turned off', 'success')
 }
 
 // ── Helpers ───────────────────────────────────────
