@@ -1464,8 +1464,18 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
       const elig  = sorted.filter(p=>p.date<=dueDate)
       const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
       if (cands.length) chosen = cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
+    } else if (strategy==='smart') {
+      // Smart: among all paychecks on or before due date, pick one with enough balance.
+      // If none have enough, pick the one with most remaining (spread the damage).
+      const elig  = sorted.filter(p=>p.date.getTime()<=dueDate.getTime())
+      const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
+      if (cands.length) {
+        const canCover = cands.filter(p=>map.get(p.dateStr).remaining>=bill.amount)
+        chosen = (canCover.length ? canCover : cands)
+          .reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
+      }
     } else {
-      // proximity & smart: last paycheck on or before due date (same day counts)
+      // proximity: last paycheck on or before due date (same day counts)
       for (const p of sorted) { if(p.date.getTime()<=dueDate.getTime()) chosen=p; else break }
       if (!chosen) chosen = sorted.find(p=>p.date>dueDate)??null
     }
