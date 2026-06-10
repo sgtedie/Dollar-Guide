@@ -921,41 +921,19 @@ function renderPaychecks() {
   const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
   const refY=refDate.getFullYear(), refM=refDate.getMonth()
 
-  // Generate paychecks only for the ref month + 1 month buffer each side
+  // Generate paychecks across a wide window so prev-month paychecks are available
   const allPc = S.schedules.flatMap(s => genPayDates(s, pcPage + 4)); allPc.sort((a,b)=>a.date-b.date)
-
-  // Generate bill occurrences only for the ref month
-  const refStart = new Date(refY, refM, 1)
-  const refEnd   = new Date(refY, refM + 1, 0) // last day of ref month
-
   const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
 
-  // Run assignment scoped to just the ref month's bills
-  const refPc = allPc.filter(p => {
-    const pm = p.date.getMonth(), py = p.date.getFullYear()
-    // Include paychecks from ref month + stragglers from prev month that cover ref month bills
-    return (py === refY && pm === refM) ||
-           (py === (refM===0?refY-1:refY) && pm === (refM===0?11:refM-1))
-  })
-
-  let allGroups
-  if (S.strategy==='proximity') allGroups = byDueDate(sortedBills, allPc, pcPage + 4)
-  else if (S.strategy==='even') allGroups = evenly(sortedBills, allPc, pcPage + 4)
-  else allGroups = smartAssign(sortedBills, allPc, pcPage + 4)
-  allGroups = applyOverrides(allGroups, allPc)
+  // Assign only REF-MONTH bill occurrences to paychecks
+  // This means each bill appears exactly once, assigned to whatever paycheck covers it
+  const allGroups = assignForMonth(sortedBills, allPc, refY, refM, S.strategy)
+  applyOverrides(allGroups, allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
-
-  // Show ONLY current month's paychecks, and only bills DUE in the ref month
+  // Show all paychecks that have bills — no month filter, so late-June paychecks
+  // covering July-1 bills show up correctly in the July view
   const window = allGroups
-    .filter(g => inM(g, refY, refM))
-    .map(g => {
-      const monthBills = g.bills.filter(ab =>
-        ab.dueDate.getFullYear() === refY && ab.dueDate.getMonth() === refM
-      )
-      const total = monthBills.reduce((s, ab) => s + ab.bill.amount, 0)
-      return { ...g, bills: monthBills, totalBills: total, remaining: g.paycheck.netAmount - total }
-    })
 
   // Update month navigator label
   if(navEl) document.getElementById('pc-nav-label').textContent =
@@ -1452,6 +1430,51 @@ function updateIncomePreview() {
   const mult = smFreq==='weekly'?4.33 : smFreq==='biweekly'?2.17 : smFreq==='semimonthly'?2 : smFreq==='custom'?2 : 1
   el.textContent = `≈ $${fmt(amt*mult)} estimated monthly income`
   el.classList.remove('hidden')
+}
+
+// ── Month-scoped assignment ───────────────────────
+// Generates bill occurrences for ONE month only, assigns to whatever paycheck covers them.
+// Each bill appears exactly once. Paycheck can be previous month (for bills due on the 1st).
+function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
+  const refStart = new Date(refYear, refMonth, 1)
+  const refEnd   = new Date(refYear, refMonth + 1, 0)
+
+  // One occurrence per bill for the ref month
+  const occurrences = []
+  for (const bill of bills) {
+    for (const dd of dueDates(bill, refStart, refEnd)) {
+      occurrences.push({ bill, dueDate: dd })
+    }
+  }
+
+  // Sort by priority then due date
+  occurrences.sort((a,b) => {
+    const po = (PRIO_ORDER[a.bill.priority||'essential']||0)-(PRIO_ORDER[b.bill.priority||'essential']||0)
+    return po!==0 ? po : a.dueDate-b.dueDate
+  })
+
+  const map    = new Map()
+  const sorted = [...paychecks].sort((a,b)=>a.date-b.date)
+  paychecks.forEach(p => map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
+
+  for (const {bill,dueDate} of occurrences) {
+    let chosen = null
+    if (strategy==='even') {
+      // Pick paycheck with most remaining balance on or before due date
+      const elig  = sorted.filter(p=>p.date<=dueDate)
+      const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
+      if (cands.length) chosen = cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
+    } else {
+      // proximity & smart: last paycheck on or before due date (same day counts)
+      for (const p of sorted) { if(p.date.getTime()<=dueDate.getTime()) chosen=p; else break }
+      if (!chosen) chosen = sorted.find(p=>p.date>dueDate)??null
+    }
+    if (!chosen) continue
+    const g = map.get(chosen.dateStr)
+    g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining-=bill.amount
+  }
+
+  return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0)
 }
 
 // ── Smart assign ─────────────────────────────────
