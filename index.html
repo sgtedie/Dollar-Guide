@@ -231,6 +231,34 @@
     .balance-label{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
     .balance-val{font-size:20px;font-weight:800}
 
+    /* ── Category icon picker ── */
+    .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+    .cat-opt{padding:10px 6px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .cat-opt .cat-em{font-size:20px}
+    .cat-opt.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+    .cat-opt:hover:not(.on){border-color:var(--muted);color:var(--text)}
+
+    /* ── Bill frequency mini grid ── */
+    .freq-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
+    .freq-mini-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:9px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;text-align:center;transition:all .15s}
+    .freq-mini-btn.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+    .freq-preview{font-size:12px;color:var(--muted);margin-top:6px;padding:8px 12px;background:var(--surface2);border-radius:8px;}
+
+    /* ── Paycheck income preview ── */
+    .income-preview{background:var(--success-bg);border:1px solid rgba(22,163,74,.25);border-radius:9px;padding:10px 14px;margin-top:8px;font-size:13px;color:var(--success);font-weight:600}
+
+    /* ── Chart styles ── */
+    .chart-wrap{margin-bottom:14px}
+    .chart-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px}
+    .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+    .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+    /* ── Color polish ── */
+    .surplus{color:var(--success)!important}
+    .shortfall{color:var(--danger)!important}
+    .warning{color:var(--amber)!important}
+
     /* ── Empty ── */
     .empty{text-align:center;padding:40px 20px;color:var(--muted)}
     .empty-icon{font-size:44px;margin-bottom:12px}.empty-text{font-size:15px;line-height:1.5;margin-bottom:16px}
@@ -442,11 +470,29 @@
     </div>
     <div class="fg">
       <label>Category</label>
-      <select id="m-cat">
-        <option>Housing</option><option>Utilities</option><option>Insurance</option>
-        <option>Food</option><option>Transport</option><option>Subscriptions</option>
-        <option>Healthcare</option><option>Debt</option><option selected>Other</option>
-      </select>
+      <div class="cat-grid" id="cat-grid">
+        <button class="cat-opt" data-c="Housing"       onclick="setCat(this)"><span class="cat-em">🏠</span>Housing</button>
+        <button class="cat-opt" data-c="Utilities"     onclick="setCat(this)"><span class="cat-em">⚡</span>Utilities</button>
+        <button class="cat-opt" data-c="Insurance"     onclick="setCat(this)"><span class="cat-em">🛡️</span>Insurance</button>
+        <button class="cat-opt" data-c="Food"          onclick="setCat(this)"><span class="cat-em">🛒</span>Food</button>
+        <button class="cat-opt" data-c="Transport"     onclick="setCat(this)"><span class="cat-em">🚗</span>Transport</button>
+        <button class="cat-opt" data-c="Subscriptions" onclick="setCat(this)"><span class="cat-em">📺</span>Subscriptions</button>
+        <button class="cat-opt" data-c="Healthcare"    onclick="setCat(this)"><span class="cat-em">🏥</span>Healthcare</button>
+        <button class="cat-opt" data-c="Debt"          onclick="setCat(this)"><span class="cat-em">💳</span>Debt</button>
+        <button class="cat-opt on" data-c="Other"      onclick="setCat(this)"><span class="cat-em">📦</span>Other</button>
+      </div>
+      <input type="hidden" id="m-cat" value="Other">
+    </div>
+    <div class="fg" id="m-freq-wrap">
+      <label>How often does this bill occur?</label>
+      <div class="freq-mini">
+        <button class="freq-mini-btn" data-f="weekly"    onclick="setBillFreq(this)">Weekly</button>
+        <button class="freq-mini-btn" data-f="biweekly"  onclick="setBillFreq(this)">Every 2 wks</button>
+        <button class="freq-mini-btn on" data-f="monthly" onclick="setBillFreq(this)">Monthly</button>
+        <button class="freq-mini-btn" data-f="quarterly" onclick="setBillFreq(this)">Quarterly</button>
+        <button class="freq-mini-btn" data-f="annually"  onclick="setBillFreq(this)">Annually</button>
+      </div>
+      <div class="freq-preview" id="m-freq-preview">Repeats every month</div>
     </div>
     <div class="fg">
       <label>Priority</label>
@@ -488,7 +534,11 @@
       <p style="font-size:11px;color:var(--muted);margin-top:6px;">Enter day numbers separated by commas</p>
     </div>
     <div class="fg" id="sm-date-wrap"><label>Next pay date</label><input type="date" id="sm-date"></div>
-    <div class="fg"><label>Take-home pay per paycheck</label><div class="ipw"><span class="ipw-pre">$</span><input type="number" id="sm-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal"></div></div>
+    <div class="fg">
+      <label>Take-home pay per paycheck</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="sm-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal" oninput="updateIncomePreview()"></div>
+      <div class="income-preview hidden" id="sm-income-preview"></div>
+    </div>
     <div id="sm-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;margin-bottom:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="saveSched()">Save Schedule</button>
@@ -845,19 +895,31 @@ function openBillModal(editId, prefill) {
   clearAlert('m-alert')
   document.getElementById('m-id').value=editId||''
   document.getElementById('bill-modal-title').textContent=editId?'Edit Bill':'Add Bill'
+  const setFormCat = (cat) => {
+    document.querySelectorAll('.cat-opt').forEach(b=>{ b.classList.remove('on'); if(b.dataset.c===cat) b.classList.add('on') })
+    document.getElementById('m-cat').value = cat
+  }
+  const setFormFreq = (freq) => {
+    mBillFreq = freq||'monthly'
+    document.querySelectorAll('.freq-mini-btn').forEach(b=>{ b.classList.remove('on'); if(b.dataset.f===mBillFreq) b.classList.add('on') })
+    const prev = document.getElementById('m-freq-preview')
+    if(prev) prev.textContent = FREQ_PREVIEWS[mBillFreq]||''
+  }
   if (editId) {
     const b=S.bills.find(x=>x.id===editId)
     document.getElementById('m-name').value=b.name; document.getElementById('m-amount').value=b.amount
     document.getElementById('m-due').value=b.due_day||''; document.getElementById('m-due-date').value=b.due_date||''
-    document.getElementById('m-cat').value=b.category; mPriority=b.priority||'essential'; setBillType(b.bill_type||'recurring')
+    mPriority=b.priority||'essential'; setBillType(b.bill_type||'recurring')
+    setFormCat(b.category||'Other'); setFormFreq(b.bill_frequency||'monthly')
   } else if (prefill) {
     document.getElementById('m-name').value=prefill.name; document.getElementById('m-amount').value=prefill.amount
     document.getElementById('m-due').value=prefill.due_day||''; document.getElementById('m-due-date').value=''
-    document.getElementById('m-cat').value=prefill.category; mPriority=prefill.priority||'essential'; setBillType('recurring')
+    mPriority=prefill.priority||'essential'; setBillType('recurring')
+    setFormCat(prefill.category||'Other'); setFormFreq('monthly')
   } else {
     document.getElementById('m-name').value=''; document.getElementById('m-amount').value=''
     document.getElementById('m-due').value=''; document.getElementById('m-due-date').value=''
-    document.getElementById('m-cat').value='Other'; mPriority='essential'; setBillType('recurring')
+    mPriority='essential'; setBillType('recurring'); setFormCat('Other'); setFormFreq('monthly')
   }
   document.querySelectorAll('.prio-btn').forEach(b=>{ b.classList.remove('on'); if(b.dataset.p===mPriority) b.classList.add('on') })
   document.getElementById('bill-overlay').classList.remove('hidden')
@@ -865,10 +927,11 @@ function openBillModal(editId, prefill) {
 }
 async function saveBill() {
   const id=document.getElementById('m-id').value, name=document.getElementById('m-name').value.trim()
-  const amount=parseFloat(document.getElementById('m-amount').value), cat=document.getElementById('m-cat').value
+  const amount=parseFloat(document.getElementById('m-amount').value)
   if (!name) return showAlert('m-alert','Enter a bill name','error')
   if (!amount||amount<=0) return showAlert('m-alert','Enter a valid amount','error')
-  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority }
+  const cat = document.getElementById('m-cat').value || 'Other'
+  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority, bill_frequency:mBillFreq }
   if (mBillType==='recurring') { const due=parseInt(document.getElementById('m-due').value); if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error'); payload.due_day=due; payload.due_date=null }
   else { const dueDate=document.getElementById('m-due-date').value; if (!dueDate) return showAlert('m-alert','Select a due date','error'); payload.due_date=dueDate; payload.due_day=null }
   let err
@@ -916,7 +979,7 @@ function openSchedModal(editId) {
   updateSmFreqUI(); document.getElementById('sched-overlay').classList.remove('hidden')
   setTimeout(()=>document.getElementById('sm-name').focus(),100)
 }
-function pickSmFreq(btn) { smFreq=btn.dataset.f; document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b=>b.classList.toggle('on',b===btn)); updateSmFreqUI() }
+function pickSmFreq(btn) { smFreq=btn.dataset.f; document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b=>b.classList.toggle('on',b===btn)); updateSmFreqUI(); updateIncomePreview() }
 function updateSmFreqUI() { const c=smFreq==='custom'; document.getElementById('sm-custom-wrap').classList.toggle('hidden',!c); document.getElementById('sm-date-wrap').classList.toggle('hidden',c) }
 async function saveSched() {
   const id=document.getElementById('sm-id').value, name=document.getElementById('sm-name').value.trim()
@@ -950,6 +1013,9 @@ function renderReports() {
   const totalBills=S.bills.reduce((s,b)=>s+b.amount,0)
   const paidAmt=S.bills.filter(b=>paidSet.has(b.id)).reduce((s,b)=>s+b.amount,0)
   const unpaidAmt=totalBills-paidAmt
+  const totalBuckets=S.buckets.reduce((s,b)=>s+Number(b.monthly_contribution),0)
+  let monthIncome=S.schedules.reduce((sum,s)=>{ const a=Number(s.amount),f=s.frequency; if(f==='weekly') return sum+a*4.33; if(f==='biweekly') return sum+a*2.17; if(f==='semimonthly') return sum+a*2; if(f==='custom') return sum+a*parseCustomDays(s.custom_days).length; return sum+a },0)
+  const freeAmt = Math.max(0, monthIncome - totalBills - totalBuckets)
 
   // By category
   const byCat={}
@@ -963,43 +1029,122 @@ function renderReports() {
 
   const monthName=NOW.toLocaleDateString('en-US',{month:'long',year:'numeric'})
 
+  // ── Donut chart: income allocation ──
+  const donutSvg = monthIncome > 0 ? buildDonut([
+    { label:'Bills',   value:totalBills,   color:'#c8102e' },
+    { label:'Buckets', value:totalBuckets, color:'#1d4ed8' },
+    { label:'Free',    value:freeAmt,      color:'#16a34a' },
+  ], monthIncome) : ''
+
+  // ── Bar chart: paychecks vs bills ──
+  const allPc = S.schedules.flatMap(s=>genPayDates(s,2))
+  allPc.sort((a,b)=>a.date-b.date)
+  const today=new Date(); today.setHours(0,0,0,0)
+  const upcomingPc = allPc.filter(p=>p.date>=today).slice(0,6)
+  const sortedBills=[...S.bills].sort((a,b)=>(PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
+  const groups = smartAssign(sortedBills,allPc,2)
+  const barSvg = buildBarChart(upcomingPc, groups)
+
   el.innerHTML = `
     <div class="report-card">
       <div class="report-title">${monthName} Summary</div>
       <div class="stat-row"><span class="stat-label">Total bills</span><span class="stat-val">$${fmt(totalBills)}</span></div>
-      <div class="stat-row"><span class="stat-label">Paid so far</span><span class="stat-val c-success">$${fmt(paidAmt)}</span></div>
-      <div class="stat-row"><span class="stat-label">Still owed</span><span class="stat-val c-amber">$${fmt(unpaidAmt)}</span></div>
-      <div class="stat-row"><span class="stat-label">Bills paid</span><span class="stat-val">${S.payments.length} of ${S.bills.filter(b=>b.bill_type!=='single'||true).length}</span></div>
+      <div class="stat-row"><span class="stat-label">Paid so far</span><span class="stat-val" style="color:var(--success);">$${fmt(paidAmt)}</span></div>
+      <div class="stat-row"><span class="stat-label">Still owed</span><span class="stat-val" style="color:${unpaidAmt>0?'var(--amber)':'var(--success)}'};">$${fmt(unpaidAmt)}</span></div>
+      <div class="stat-row"><span class="stat-label">Bills paid</span><span class="stat-val">${S.payments.length} of ${S.bills.length}</span></div>
+      ${monthIncome>0?`<div class="stat-row"><span class="stat-label">Free &amp; clear</span><span class="stat-val" style="color:${freeAmt>=0?'var(--success)':'var(--danger)}'};">$${fmt(freeAmt)}</span></div>`:''}
     </div>
+
+    ${monthIncome>0?`<div class="report-card">
+      <div class="report-title">Income Allocation</div>
+      <div class="chart-wrap" style="display:flex;align-items:center;gap:20px;">
+        ${donutSvg}
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#c8102e;"></span>Bills $${fmt(totalBills)}</div>
+          ${totalBuckets>0?`<div class="legend-item"><span class="legend-dot" style="background:#1d4ed8;"></span>Buckets $${fmt(totalBuckets)}</div>`:''}
+          <div class="legend-item"><span class="legend-dot" style="background:#16a34a;"></span>Free $${fmt(freeAmt)}</div>
+        </div>
+      </div>
+    </div>`:''}
+
+    ${upcomingPc.length>0?`<div class="report-card">
+      <div class="report-title">Paychecks vs Bills (Next 6)</div>
+      ${barSvg}
+    </div>`:''}
 
     <div class="report-card">
       <div class="report-title">Spending by Category</div>
-      ${catEntries.map(([cat, amt]) => `
-        <div class="cat-row">
-          <div class="cat-name">${cat}</div>
-          <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${Math.round((amt/maxCat)*100)}%;"></div></div>
+      ${catEntries.map(([cat,amt])=>{
+        const pct=Math.round((amt/maxCat)*100)
+        return `<div class="cat-row">
+          <div class="cat-name">${CAT_ICON[cat]||'📦'} ${cat}</div>
+          <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%;background:${pct>70?'#c8102e':pct>40?'#d97706':'#1d4ed8'};"></div></div>
           <div class="cat-amt">$${fmt(amt)}</div>
-        </div>`).join('')}
+        </div>`}).join('')}
     </div>
 
     <div class="report-card">
       <div class="report-title">By Priority</div>
-      <div class="cat-row">
-        <div class="cat-name" style="color:#c8102e;">Essential</div>
-        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.essential/totalBills)*100):0}%;background:#c8102e;"></div></div>
-        <div class="cat-amt">$${fmt(byPrio.essential)}</div>
-      </div>
-      <div class="cat-row">
-        <div class="cat-name" style="color:#d97706;">Important</div>
-        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.important/totalBills)*100):0}%;background:#d97706;"></div></div>
-        <div class="cat-amt">$${fmt(byPrio.important)}</div>
-      </div>
-      <div class="cat-row">
-        <div class="cat-name" style="color:#1d4ed8;">Optional</div>
-        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.optional/totalBills)*100):0}%;background:#1d4ed8;"></div></div>
-        <div class="cat-amt">$${fmt(byPrio.optional)}</div>
-      </div>
+      ${[['essential','Essential','#c8102e'],['important','Important','#d97706'],['optional','Optional','#1d4ed8']].map(([k,label,color])=>`
+        <div class="cat-row">
+          <div class="cat-name" style="color:${color};">● ${label}</div>
+          <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio[k]/totalBills)*100):0}%;background:${color};"></div></div>
+          <div class="cat-amt">$${fmt(byPrio[k])}</div>
+        </div>`).join('')}
     </div>`
+}
+
+// ── SVG chart builders ────────────────────────────
+const CAT_ICON = { Housing:'🏠', Utilities:'⚡', Insurance:'🛡️', Food:'🛒', Transport:'🚗', Subscriptions:'📺', Healthcare:'🏥', Debt:'💳', Other:'📦' }
+
+function buildDonut(slices, total) {
+  const r=52, cx=64, cy=64, ir=30
+  let angle=-90
+  const paths=slices.filter(s=>s.value>0).map(s=>{
+    const pct=s.value/total, sweep=pct*360
+    const p1=polar(cx,cy,r,angle), p2=polar(cx,cy,r,angle+sweep)
+    const large=sweep>180?1:0
+    const d=`M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y} L ${polar(cx,cy,ir,angle+sweep).x} ${polar(cx,cy,ir,angle+sweep).y} A ${ir} ${ir} 0 ${large} 0 ${polar(cx,cy,ir,angle).x} ${polar(cx,cy,ir,angle).y} Z`
+    angle+=sweep
+    return `<path d="${d}" fill="${s.color}" stroke="#fff" stroke-width="2"/>`
+  }).join('')
+  return `<svg width="128" height="128" viewBox="0 0 128 128" style="flex-shrink:0;">${paths}</svg>`
+}
+
+function polar(cx,cy,r,deg) {
+  const rad=(deg)*Math.PI/180
+  return { x:+(cx+r*Math.cos(rad)).toFixed(2), y:+(cy+r*Math.sin(rad)).toFixed(2) }
+}
+
+function buildBarChart(paychecks, groups) {
+  if (!paychecks.length) return ''
+  const maxAmt = Math.max(...paychecks.map(p=>p.netAmount)) * 1.1
+  const bw=36, gap=14, h=120, pad=40
+  const W = paychecks.length*(bw+gap)+pad
+  const bars = paychecks.map((pc,i) => {
+    const g = groups.find(gr=>gr.paycheck.dateStr===pc.dateStr)
+    const bills = g ? g.totalBills : 0
+    const rem   = pc.netAmount - bills
+    const over  = rem < 0
+    const pcH   = Math.round((pc.netAmount/maxAmt)*h)
+    const billH = Math.min(Math.round((bills/maxAmt)*h), pcH)
+    const x     = i*(bw+gap)+pad/2
+    const label = pc.date.toLocaleDateString('en-US',{month:'short',day:'numeric'})
+    return `
+      <rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH}" rx="4" fill="#dce8f7"/>
+      <rect x="${x}" y="${h-billH}" width="${bw}" height="${billH}" rx="4" fill="${over?'#c8102e':'#c8102e'}" opacity="${over?1:.8}"/>
+      ${rem>0?`<rect x="${x}" y="${h-pcH}" width="${bw}" height="${pcH-billH}" rx="4" fill="#16a34a" opacity=".7"/>`:''}
+      <text x="${x+bw/2}" y="${h+14}" text-anchor="middle" font-size="9" fill="#4a6fa5" font-family="sans-serif">${label}</text>
+      <text x="${x+bw/2}" y="${h-pcH-4}" text-anchor="middle" font-size="8" fill="${rem<0?'#c8102e':'#4a6fa5'}" font-family="sans-serif">$${Math.round(rem)}</text>`
+  }).join('')
+  return `<svg width="100%" viewBox="0 0 ${W} ${h+30}" style="overflow:visible;">
+    ${bars}
+    <line x1="0" y1="${h}" x2="${W}" y2="${h}" stroke="#b8cce4" stroke-width="1"/>
+  </svg>
+  <div class="chart-legend" style="margin-top:10px;">
+    <div class="legend-item"><span class="legend-dot" style="background:#16a34a;opacity:.7;"></span>Remaining</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c8102e;opacity:.8;"></span>Bills due</div>
+  </div>`
 }
 
 // ── Templates ─────────────────────────────────────
@@ -1052,6 +1197,41 @@ function goPage(p) {
 
 function closeOverlay(id) { document.getElementById(id).classList.add('hidden') }
 function overlayClick(e,id) { if(e.target===document.getElementById(id)) closeOverlay(id) }
+
+// ── Bill form helpers ─────────────────────────────
+let mBillFreq = 'monthly'
+
+function setCat(btn) {
+  document.querySelectorAll('.cat-opt').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  document.getElementById('m-cat').value = btn.dataset.c
+}
+
+const FREQ_PREVIEWS = {
+  weekly:    'Repeats every week (~4.3× per month)',
+  biweekly:  'Repeats every 2 weeks (~2.2× per month)',
+  monthly:   'Repeats every month',
+  quarterly: 'Repeats every 3 months (4× per year)',
+  annually:  'Repeats once per year',
+}
+const FREQ_MONTHLY_MULT = { weekly:4.33, biweekly:2.17, monthly:1, quarterly:0.33, annually:0.083 }
+
+function setBillFreq(btn) {
+  mBillFreq = btn.dataset.f
+  document.querySelectorAll('.freq-mini-btn').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  document.getElementById('m-freq-preview').textContent = FREQ_PREVIEWS[mBillFreq] || ''
+}
+
+// ── Paycheck income preview ────────────────────────
+function updateIncomePreview() {
+  const amt = parseFloat(document.getElementById('sm-amount').value)||0
+  const el  = document.getElementById('sm-income-preview')
+  if (!amt) { el.classList.add('hidden'); return }
+  const mult = smFreq==='weekly'?4.33 : smFreq==='biweekly'?2.17 : smFreq==='semimonthly'?2 : smFreq==='custom'?2 : 1
+  el.textContent = `≈ $${fmt(amt*mult)} estimated monthly income`
+  el.classList.remove('hidden')
+}
 
 // ── Smart assign ─────────────────────────────────
 // Priority-first, due-date-respecting, balance-aware
@@ -1278,8 +1458,23 @@ function genPayDates(sched,mo){
 
 function dueDates(bill,start,end){
   if(bill.bill_type==='single'&&bill.due_date){ const d=parseD(bill.due_date); return(d>=start&&d<=end)?[d]:[] }
-  const dates=[]; let y=start.getFullYear(),m=start.getMonth()
-  while(true){ const last=new Date(y,m+1,0).getDate(),day=Math.min(bill.due_day,last),d=new Date(y,m,day); if(d>end) break; if(d>=start) dates.push(d); m++; if(m>11){m=0;y++} }
+  const freq=bill.bill_frequency||'monthly'
+  const dates=[]; let y=start.getFullYear(),m=start.getMonth(),step=0
+  // Find first occurrence on or after start
+  while(true){
+    let d
+    if(freq==='weekly')    { d=new Date(start); d.setDate(d.getDate()+step*7) }
+    else if(freq==='biweekly') { d=new Date(start); d.setDate(d.getDate()+step*14) }
+    else if(freq==='quarterly') { const qm=m+step*3; d=new Date(y+Math.floor(qm/12),qm%12,Math.min(bill.due_day,new Date(y+Math.floor(qm/12),qm%12+1,0).getDate())) }
+    else if(freq==='annually')  { d=new Date(y+step,m,Math.min(bill.due_day,new Date(y+step,m+1,0).getDate())) }
+    else { // monthly
+      const tm=m+step; d=new Date(y+Math.floor(tm/12),tm%12,Math.min(bill.due_day,new Date(y+Math.floor(tm/12),tm%12+1,0).getDate()))
+    }
+    if(d>end) break
+    if(d>=start) dates.push(d)
+    step++
+    if(step>500) break // safety
+  }
   return dates
 }
 
@@ -1303,7 +1498,13 @@ function evenly(bills,paychecks,mo){
 // ── Helpers ───────────────────────────────────────
 function fmt(n){ return Number(n).toFixed(2) }
 function ordinal(n){ const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
-function billMeta(b){ if(b.bill_type==='single'&&b.due_date){ const d=new Date(b.due_date+'T00:00:00'); return `Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}` }; return `Due the ${ordinal(b.due_day)} · ${b.category}` }
+const FREQ_BADGE = { weekly:'Weekly', biweekly:'Every 2 wks', monthly:'Monthly', quarterly:'Quarterly', annually:'Annually' }
+function billMeta(b){
+  if(b.bill_type==='single'&&b.due_date){ const d=new Date(b.due_date+'T00:00:00'); return `One-time · Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}` }
+  const freq=b.bill_frequency||'monthly'
+  const freqLabel=FREQ_BADGE[freq]||freq
+  return `${freqLabel} · Due the ${ordinal(b.due_day)} · ${b.category}`
+}
 function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
 function clearAlert(id){ const el=document.getElementById(id); el.classList.add('hidden'); el.textContent='' }
 
