@@ -4,197 +4,208 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dollar Guide</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23edf2fb'/%3E%3Ccircle cx='32' cy='32' r='28' fill='white' stroke='%230a1f5c' stroke-width='2'/%3E%3Cpolygon points='32,6 35,26 32,24 29,26' fill='%23c8102e'/%3E%3Cpolygon points='32,58 35,38 32,40 29,38' fill='%234a6fa5'/%3E%3Cpolygon points='6,32 26,29 24,32 26,35' fill='%234a6fa5'/%3E%3Cpolygon points='58,32 38,29 40,32 38,35' fill='%234a6fa5'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23c8102e'/%3E%3Ctext x='32' y='37' text-anchor='middle' font-family='sans-serif' font-size='11' font-weight='bold' fill='%230a1f5c'%3E%24%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #edf2fb;
-      --surface: #ffffff;
-      --surface2: #dce8f7;
-      --border: #b8cce4;
-      --text: #0a1f5c;
-      --muted: #4a6fa5;
-      --green: #c8102e;
-      --green-dark: #a00d24;
-      --green-bg: rgba(200,16,46,0.08);
-      --red: #c8102e;
-      --red-bg: rgba(200,16,46,0.08);
-      --yellow: #1d4ed8;
-      --yellow-bg: rgba(29,78,216,0.08);
-      --radius: 14px;
-      --radius-sm: 10px;
+      --bg:#edf2fb; --surface:#ffffff; --surface2:#dce8f7; --border:#b8cce4;
+      --text:#0a1f5c; --muted:#4a6fa5;
+      --accent:#c8102e; --accent-dark:#a00d24; --accent-bg:rgba(200,16,46,0.08);
+      --blue:#1d4ed8; --blue-bg:rgba(29,78,216,0.08);
+      --amber:#d97706; --amber-bg:rgba(217,119,6,0.08);
+      --success:#16a34a; --success-bg:rgba(22,163,74,0.08);
+      --danger:#c8102e; --danger-bg:rgba(200,16,46,0.08);
+      /* legacy aliases so existing code still works */
+      --green:var(--accent); --green-dark:var(--accent-dark); --green-bg:var(--accent-bg);
+      --red:var(--accent); --red-bg:var(--accent-bg); --yellow:var(--blue); --yellow-bg:var(--blue-bg);
+      --radius:14px; --radius-sm:10px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; max-width: 500px; margin: 0 auto;
-    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:500px;margin:0 auto}
 
-    /* Auth */
-    #auth-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
-    .auth-icon { margin-bottom:12px; }
-    .auth-title { font-size:28px; font-weight:800; margin-bottom:4px; }
-    .auth-sub { color:var(--muted); font-size:14px; margin-bottom:32px; }
-    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; width:100%; }
-    .toggle-row { display:flex; background:var(--surface2); border-radius:var(--radius-sm); padding:4px; margin-bottom:22px; }
-    .toggle-btn { flex:1; padding:9px; border:none; background:transparent; color:var(--muted); border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all .15s; }
-    .toggle-btn.on { background:var(--green); color:#fff; }
+    /* ── Auth ── */
+    #auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+    .auth-title{font-size:28px;font-weight:800;margin:12px 0 4px}
+    .auth-sub{color:var(--muted);font-size:14px;margin-bottom:32px;text-align:center;font-style:italic}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:100%}
+    .toggle-row{display:flex;background:var(--surface2);border-radius:var(--radius-sm);padding:4px;margin-bottom:22px}
+    .toggle-btn{flex:1;padding:9px;border:none;background:transparent;color:var(--muted);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+    .toggle-btn.on{background:var(--accent);color:#fff}
 
-    /* Forms */
-    .fg { margin-bottom:16px; }
-    label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
-    input, select { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; color:var(--text); font-size:15px; outline:none; transition:border-color .15s; appearance:none; }
-    input:focus, select:focus { border-color:var(--green); }
-    input::placeholder { color:var(--muted); }
-    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238896b3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
-    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .input-pre-wrap { position:relative; }
-    .input-pre { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:15px; pointer-events:none; }
-    .input-pre-wrap input { padding-left:26px; }
+    /* ── Forms ── */
+    .fg{margin-bottom:16px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500}
+    input,select{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:13px 14px;color:var(--text);font-size:15px;outline:none;transition:border-color .15s;appearance:none}
+    input:focus,select:focus{border-color:var(--accent)}
+    input::placeholder{color:var(--muted)}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238896b3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .ipw{position:relative}.ipw-pre{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}.ipw input{padding-left:26px}
 
-    /* Buttons */
-    .btn { display:block; width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:15px; font-weight:700; cursor:pointer; transition:opacity .15s; text-align:center; }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
-    .btn-green { background:var(--green); color:#fff; }
-    .btn-green:hover:not(:disabled) { background:var(--green-dark); }
-    .btn-gray { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
-    .btn-red { background:var(--red-bg); color:var(--red); border:1px solid rgba(239,68,68,.3); }
-    .btn-sm { padding:8px 14px; width:auto; font-size:13px; border-radius:8px; display:inline-block; }
-    .btn-icon { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:7px; cursor:pointer; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; transition:all .15s; }
-    .btn-icon:hover { color:var(--text); }
-    .btn-icon.del:hover { color:var(--red); background:var(--red-bg); border-color:rgba(239,68,68,.3); }
+    /* ── Buttons ── */
+    .btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;text-align:center}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-accent{background:var(--accent);color:#fff}.btn-accent:hover:not(:disabled){background:var(--accent-dark)}
+    .btn-gray{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+    .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(200,16,46,.3)}
+    .btn-sm{padding:8px 14px;width:auto;font-size:13px;border-radius:8px;display:inline-block}
+    .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--muted);padding:8px 14px;width:auto;font-size:13px;border-radius:8px;cursor:pointer;font-weight:600;transition:all .15s}
+    .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+    .iBtn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+    .iBtn:hover{color:var(--text)}.iBtn.del:hover{color:var(--danger);background:var(--danger-bg);border-color:rgba(200,16,46,.3)}
 
-    /* Alerts */
-    .alert { padding:11px 14px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
-    .alert-error { background:var(--red-bg); color:var(--red); border:1px solid rgba(239,68,68,.3); }
-    .alert-success { background:var(--green-bg); color:var(--green); border:1px solid rgba(34,197,94,.3); }
-    .hidden { display:none !important; }
+    /* ── Alerts ── */
+    .alert{padding:11px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:14px}
+    .alert-error{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(200,16,46,.3)}
+    .alert-success{background:var(--success-bg);color:var(--success);border:1px solid rgba(22,163,74,.3)}
+    .hidden{display:none !important}
 
-    /* App shell */
-    #app { display:none; flex-direction:column; min-height:100vh; }
-    #app.show { display:flex; }
-    .app-header { background:var(--surface); border-bottom:1px solid var(--border); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:20; }
-    .header-brand { display:flex; align-items:center; gap:8px; font-size:18px; font-weight:800; }
-    .signout-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:6px 10px; border-radius:8px; font-weight:500; }
-    .signout-btn:hover { background:var(--surface2); color:var(--text); }
-    .page-content { flex:1; padding:20px; padding-bottom:100px; }
+    /* ── App shell ── */
+    #app{display:none;flex-direction:column;min-height:100vh}
+    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+    .header-brand{display:flex;align-items:center;gap:8px}
+    .signout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:6px 10px;border-radius:8px;font-weight:500}
+    .signout-btn:hover{background:var(--surface2);color:var(--text)}
+    .page-content{flex:1;padding:20px;padding-bottom:100px}
+    .page{display:none}.page.on{display:block}
 
-    /* Bottom nav */
-    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:500px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 0 env(safe-area-inset-bottom,12px); z-index:20; }
-    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 4px; cursor:pointer; border:none; background:none; color:var(--muted); font-size:11px; font-weight:600; transition:color .15s; }
-    .nav-btn.on { color:var(--green); }
-    .nav-btn svg { width:24px; height:24px; }
+    /* ── Bottom nav ── */
+    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,12px);z-index:20}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;transition:color .15s}
+    .nav-btn.on{color:var(--accent)}.nav-btn svg{width:22px;height:22px}
 
-    /* Pages */
-    .page { display:none; }
-    .page.on { display:block; }
+    /* ── Section header ── */
+    .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .sec-title{font-size:17px;font-weight:700}
 
-    /* Summary grid */
-    .sum-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
-    .sum-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
-    .sum-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:7px; font-weight:600; }
-    .sum-val { font-size:24px; font-weight:800; line-height:1; }
-    .sum-sub { font-size:11px; color:var(--muted); margin-top:5px; }
-    .c-green { color:var(--green); }
-    .c-red { color:var(--red); }
-    .c-yellow { color:var(--yellow); }
+    /* ── Summary grid ── */
+    .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+    .sum-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;font-weight:600}
+    .sum-val{font-size:24px;font-weight:800;line-height:1}
+    .sum-sub{font-size:11px;color:var(--muted);margin-top:5px}
+    .c-success{color:var(--success)}.c-danger{color:var(--danger)}.c-amber{color:var(--amber)}.c-blue{color:var(--blue)}
 
-    /* Section header */
-    .sec-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-    .sec-title { font-size:17px; font-weight:700; }
+    /* ── Strategy pills ── */
+    .strat-wrap{display:flex;gap:6px}
+    .strat-pill{padding:5px 11px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+    .strat-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
 
-    /* Strategy pills */
-    .strat-wrap { display:flex; gap:6px; }
-    .strat-pill { padding:6px 12px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--border); background:transparent; color:var(--muted); transition:all .15s; }
-    .strat-pill.on { background:var(--green); border-color:var(--green); color:#fff; }
+    /* ── Paycheck cards ── */
+    .pc-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+    .pc-card.next{border-color:var(--accent)}
+    .pc-header{padding:16px;display:flex;align-items:flex-start;justify-content:space-between;cursor:pointer;gap:12px}
+    .pc-date{font-weight:700;font-size:16px}.pc-meta{font-size:12px;color:var(--muted);margin-top:3px}
+    .pc-right{text-align:right;flex-shrink:0}
+    .pc-amount{font-weight:800;font-size:16px}.pc-rem{font-size:12px;margin-top:3px;font-weight:600}
+    .pc-body{border-top:1px solid var(--border);padding:4px 16px 14px}
+    .pc-bill-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(184,204,228,.4);font-size:14px}
+    .pc-bill-row:last-of-type{border-bottom:none}
+    .pc-bill-name{font-weight:600}.pc-bill-due{font-size:11px;color:var(--muted);margin-top:2px}
+    .pc-bill-amt{font-weight:700;flex-shrink:0}
+    .prog-wrap{margin-top:10px}
+    .prog-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+    .prog-bg{height:6px;background:var(--surface2);border-radius:99px;overflow:hidden}
+    .prog-fill{height:100%;border-radius:99px;background:var(--accent)}
+    .prog-fill.over{background:var(--danger)}.over-msg{font-size:11px;color:var(--danger);margin-top:5px}
 
-    /* Paycheck cards */
-    .pc-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
-    .pc-card.next { border-color:var(--green); }
-    .pc-header { padding:16px; display:flex; align-items:flex-start; justify-content:space-between; cursor:pointer; gap:12px; }
-    .pc-date { font-weight:700; font-size:16px; }
-    .pc-meta { font-size:12px; color:var(--muted); margin-top:3px; }
-    .pc-right { text-align:right; flex-shrink:0; }
-    .pc-amount { font-weight:800; font-size:16px; }
-    .pc-rem { font-size:12px; margin-top:3px; font-weight:600; }
-    .pc-body { border-top:1px solid var(--border); padding:4px 16px 14px; }
-    .pc-bill-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(42,53,80,.6); font-size:14px; }
-    .pc-bill-row:last-of-type { border-bottom:none; }
-    .pc-bill-name { font-weight:600; }
-    .pc-bill-due { font-size:11px; color:var(--muted); margin-top:2px; }
-    .pc-bill-amt { font-weight:700; flex-shrink:0; }
-    .prog-wrap { margin-top:10px; }
-    .prog-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:5px; }
-    .prog-bg { height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; }
-    .prog-fill { height:100%; border-radius:99px; background:var(--green); }
-    .prog-fill.over { background:var(--red); }
-    .over-msg { font-size:11px; color:var(--red); margin-top:5px; }
+    /* ── Chips ── */
+    .chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;margin-bottom:5px}
+    .chip-next{background:var(--accent-bg);color:var(--accent)}
+    .chip-past{background:var(--surface2);color:var(--muted)}
+    .chip-paid{background:var(--success-bg);color:var(--success);font-size:10px;padding:2px 7px;margin-left:6px}
+    .chip-job{background:var(--surface2);color:var(--muted);font-size:10px;padding:2px 7px;margin-left:6px}
+    .chip-single{background:var(--blue-bg);color:var(--blue);font-size:10px;padding:2px 7px;margin-left:6px}
 
-    /* Chips */
-    .chip { display:inline-flex; align-items:center; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:700; margin-bottom:5px; }
-    .chip-next { background:var(--green-bg); color:var(--green); }
-    .chip-past { background:var(--surface2); color:var(--muted); }
-    .chip-paid { background:var(--green-bg); color:var(--green); font-size:10px; padding:2px 7px; margin-left:6px; }
-    .chip-job { background:var(--surface2); color:var(--muted); font-size:10px; padding:2px 7px; margin-left:6px; }
+    /* ── Priority dots ── */
+    .prio-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;margin-right:2px}
+    .prio-essential{background:#c8102e}.prio-important{background:#d97706}.prio-optional{background:#1d4ed8}
+    .prio-btn{padding:9px 6px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+    .prio-btn.on.e{border-color:#c8102e;background:rgba(200,16,46,.08);color:#c8102e}
+    .prio-btn.on.i{border-color:#d97706;background:rgba(217,119,6,.08);color:#d97706}
+    .prio-btn.on.o{border-color:#1d4ed8;background:rgba(29,78,216,.08);color:#1d4ed8}
 
-    /* Bills list */
-    .bill-row { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; transition:opacity .2s; }
-    .bill-row.paid { opacity:.55; }
-    .check-circle { width:26px; height:26px; border-radius:50%; border:2px solid var(--border); background:transparent; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
-    .check-circle.on { background:var(--green); border-color:var(--green); }
-    .bill-info { flex:1; min-width:0; }
-    .bill-name { font-weight:700; font-size:15px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
-    .bill-meta { font-size:12px; color:var(--muted); margin-top:3px; }
-    .bill-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
-    .bill-amt { font-weight:800; font-size:16px; }
-    .bill-btns { display:flex; gap:6px; }
+    /* ── Bills list ── */
+    .bill-row{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;transition:opacity .2s}
+    .bill-row.paid{opacity:.5}
+    .check-circle{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .check-circle.on{background:var(--success);border-color:var(--success)}
+    .bill-info{flex:1;min-width:0}
+    .bill-name{font-weight:700;font-size:15px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+    .bill-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px}
+    .bill-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+    .bill-amt{font-weight:800;font-size:16px}.bill-btns{display:flex;gap:6px}
 
-    /* Schedule list items */
-    .sched-item { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; }
-    .sched-item-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
-    .sched-name { font-weight:700; font-size:15px; }
-    .sched-detail { font-size:12px; color:var(--muted); margin-top:2px; }
-    .sched-amount { font-weight:800; font-size:18px; color:var(--green); }
-    .sched-amount-sub { font-size:11px; color:var(--muted); margin-top:2px; text-align:right; }
-    .sched-meta-row { display:flex; gap:16px; padding-top:10px; border-top:1px solid var(--border); }
-    .sched-meta-item { flex:1; }
-    .sched-meta-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; font-weight:600; }
-    .sched-meta-val { font-size:13px; font-weight:600; }
+    /* ── Schedule items ── */
+    .sched-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+    .sched-name{font-weight:700;font-size:15px}.sched-detail{font-size:12px;color:var(--muted);margin-top:2px}
+    .sched-amount{font-weight:800;font-size:18px;color:var(--accent)}.sched-amount-sub{font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
 
-    /* Frequency grid */
-    .freq-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
-    .freq-btn { padding:13px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--muted); cursor:pointer; text-align:left; transition:all .15s; }
-    .freq-btn.on { border-color:var(--green); background:var(--green-bg); color:var(--text); }
-    .freq-title { font-size:14px; font-weight:700; display:block; }
-    .freq-sub { font-size:11px; opacity:.7; display:block; margin-top:3px; }
+    /* ── Frequency grid ── */
+    .freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .freq-btn{padding:13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);cursor:pointer;text-align:left;transition:all .15s}
+    .freq-btn.on{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
+    .freq-title{font-size:14px;font-weight:700;display:block}.freq-sub{font-size:11px;opacity:.7;display:block;margin-top:3px}
 
-    /* Modals */
-    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
-    .modal { background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:22px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; padding-bottom:calc(22px + env(safe-area-inset-bottom,0px)); }
-    .modal-handle { width:40px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 20px; }
-    .modal-title { font-size:20px; font-weight:800; margin-bottom:20px; }
+    /* ── Modals ── */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+    .modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:22px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+    .modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px}
+    .modal-title{font-size:20px;font-weight:800;margin-bottom:20px}
 
-    /* Empty state */
-    .empty { text-align:center; padding:48px 20px; color:var(--muted); }
-    .empty-icon { font-size:44px; margin-bottom:12px; }
-    .empty-text { font-size:15px; line-height:1.5; }
+    /* ── Template grid ── */
+    .tpl-section{margin-bottom:18px}
+    .tpl-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .tpl-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;cursor:pointer;text-align:left;transition:all .15s}
+    .tpl-btn:hover{border-color:var(--accent);background:var(--accent-bg)}
+    .tpl-name{font-size:13px;font-weight:600;color:var(--text)}
+    .tpl-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .tpl-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+
+    /* ── Cash flow timeline ── */
+    .cf-section{margin-top:20px}
+    .cf-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:0}
+    .cf-toggle.open{border-radius:var(--radius) var(--radius) 0 0;border-bottom:none}
+    .cf-toggle-title{font-weight:700;font-size:15px}
+    .cf-toggle-sub{font-size:12px;color:var(--muted)}
+    .cf-chevron{transition:transform .2s;color:var(--muted)}
+    .cf-toggle.open .cf-chevron{transform:rotate(180deg)}
+    .cf-body{background:var(--surface);border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:0 16px 14px}
+    .cf-balance-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:4px}
+    .cf-balance-label{font-size:13px;font-weight:600;white-space:nowrap}
+    .cf-event{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(184,204,228,.4)}
+    .cf-event:last-child{border-bottom:none}
+    .cf-date-block{text-align:center;min-width:36px;flex-shrink:0}
+    .cf-date-mon{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
+    .cf-date-day{font-size:18px;font-weight:800}
+    .cf-event-name{font-size:13px;font-weight:600}
+    .cf-event-sub{font-size:11px;color:var(--muted);margin-top:1px}
+    .cf-event-right{text-align:right;flex-shrink:0}
+    .cf-event-amt{font-size:14px;font-weight:800}
+    .cf-event-bal{font-size:11px;margin-top:1px;font-weight:600}
+
+    /* ── Empty state ── */
+    .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+    .empty-icon{font-size:44px;margin-bottom:12px}.empty-text{font-size:15px;line-height:1.5;margin-bottom:16px}
+
+    /* ── Balance strip ── */
+    .balance-strip{background:var(--blue-bg);border:1px solid rgba(29,78,216,.2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
   </style>
 </head>
 <body>
 
 <!-- ══ AUTH ══ -->
 <div id="auth-screen">
-  <div class="auth-icon">
-    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-      <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2"/>
-      <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
-      <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
-      <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
-      <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
-      <circle cx="32" cy="32" r="4" fill="#c8102e"/>
-      <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
-    </svg>
-  </div>
+  <svg width="72" height="72" viewBox="0 0 64 64" fill="none" style="margin-bottom:12px;">
+    <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2"/>
+    <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
+    <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
+    <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
+    <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
+    <circle cx="32" cy="32" r="4" fill="#c8102e"/>
+    <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#0a1f5c">$</text>
+  </svg>
   <h1 class="auth-title">Dollar Guide</h1>
   <p class="auth-sub">Guiding every dollar to where it belongs.</p>
   <div class="card">
@@ -205,7 +216,7 @@
     <div id="auth-alert" class="hidden"></div>
     <div class="fg"><label>Email</label><input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
     <div class="fg"><label>Password</label><input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password"></div>
-    <button class="btn btn-green" id="auth-submit" onclick="doAuth()">Sign In</button>
+    <button class="btn btn-accent" id="auth-submit" onclick="doAuth()">Sign In</button>
   </div>
 </div>
 
@@ -213,18 +224,18 @@
 <div id="app">
   <div class="app-header">
     <div class="header-brand">
-      <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+      <svg width="22" height="22" viewBox="0 0 64 64" fill="none" style="flex-shrink:0;">
         <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#0a1f5c" stroke-width="2.5"/>
         <polygon points="32,8 35,28 32,26 29,28" fill="#c8102e"/>
         <polygon points="32,56 35,36 32,38 29,36" fill="#4a6fa5" opacity="0.9"/>
         <polygon points="8,32 28,29 26,32 28,35" fill="#4a6fa5" opacity="0.9"/>
         <polygon points="56,32 36,29 38,32 36,35" fill="#4a6fa5" opacity="0.9"/>
         <circle cx="32" cy="32" r="4" fill="#c8102e"/>
-        <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">$</text>
+        <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#0a1f5c">$</text>
       </svg>
       <div>
         <div id="hdr-title" style="font-size:17px;font-weight:800;line-height:1.1;">Dollar Guide</div>
-        <div id="hdr-slogan" style="font-size:10px;color:var(--muted);font-style:italic;font-weight:400;">Guiding every dollar to where it belongs.</div>
+        <div id="hdr-slogan" style="font-size:10px;color:var(--muted);font-style:italic;">Guiding every dollar to where it belongs.</div>
       </div>
     </div>
     <button class="signout-btn" onclick="doSignOut()">Sign out</button>
@@ -236,20 +247,40 @@
     <div class="page on" id="pg-dashboard">
       <div class="sum-grid" id="sum-grid"></div>
       <div class="sec-header">
-        <span class="sec-title">Upcoming Paychecks</span>
+        <span class="sec-title">Paychecks</span>
         <div class="strat-wrap">
           <button class="strat-pill on" id="sp-proximity" onclick="setStrat('proximity')">By Due Date</button>
           <button class="strat-pill" id="sp-even" onclick="setStrat('even')">Even Split</button>
         </div>
       </div>
       <div id="pc-list"></div>
+      <!-- Cash Flow -->
+      <div class="cf-section" id="cf-section" style="display:none;">
+        <div class="cf-toggle" id="cf-toggle" onclick="toggleCF()">
+          <div>
+            <div class="cf-toggle-title">Cash Flow Timeline</div>
+            <div class="cf-toggle-sub">Projected money in &amp; out</div>
+          </div>
+          <svg class="cf-chevron" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="cf-body hidden" id="cf-body">
+          <div class="cf-balance-row">
+            <div class="cf-balance-label">Current balance</div>
+            <div class="ipw" style="flex:1;max-width:160px;"><span class="ipw-pre">$</span><input type="number" id="cf-balance" placeholder="0.00" step="0.01" inputmode="decimal" oninput="renderCashFlow()" style="padding:9px 9px 9px 22px;font-size:13px;"></div>
+          </div>
+          <div id="cf-list"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Bills -->
     <div class="page" id="pg-bills">
       <div class="sec-header">
         <span class="sec-title">My Bills</span>
-        <button class="btn btn-green btn-sm" onclick="openBillModal()">+ Add Bill</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-outline" onclick="openTemplates()">Templates</button>
+          <button class="btn btn-accent btn-sm" onclick="openBillModal()">+ Add Bill</button>
+        </div>
       </div>
       <div id="bills-list"></div>
     </div>
@@ -258,9 +289,9 @@
     <div class="page" id="pg-schedule">
       <div class="sec-header">
         <span class="sec-title">Pay Schedules</span>
-        <button class="btn btn-green btn-sm" onclick="openSchedModal()">+ Add Schedule</button>
+        <button class="btn btn-accent btn-sm" onclick="openSchedModal()">+ Add</button>
       </div>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Add each income source — job, side gig, benefits, anything. We'll combine them all when assigning your bills.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Add every income source. We combine them all when assigning bills.</p>
       <div id="sched-list"></div>
     </div>
 
@@ -277,7 +308,7 @@
     </button>
     <button class="nav-btn" id="nb-schedule" onclick="goPage('schedule')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Pay Schedule
+      Schedule
     </button>
   </nav>
 </div>
@@ -289,7 +320,6 @@
     <div class="modal-title" id="bill-modal-title">Add Bill</div>
     <input type="hidden" id="m-id">
 
-    <!-- Bill type toggle -->
     <div class="fg">
       <label>Bill Type</label>
       <div class="toggle-row" style="margin-bottom:0;">
@@ -299,19 +329,13 @@
     </div>
 
     <div class="fg"><label>Bill Name</label><input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off"></div>
-    <div class="fg">
-      <label>Amount</label>
-      <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div>
-    </div>
+    <div class="fg"><label>Amount</label><div class="ipw"><span class="ipw-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div></div>
 
-    <!-- Recurring: day of month -->
     <div class="fg" id="m-due-wrap">
       <label>Due Day of Month (1–31)</label>
       <input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric">
       <p style="font-size:11px;color:var(--muted);margin-top:5px;">Repeats every month on this day</p>
     </div>
-
-    <!-- One-time: specific date -->
     <div class="fg hidden" id="m-date-wrap">
       <label>Due Date</label>
       <input type="date" id="m-due-date">
@@ -326,9 +350,20 @@
         <option>Healthcare</option><option>Debt</option><option selected>Other</option>
       </select>
     </div>
+
+    <div class="fg">
+      <label>Priority</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <button class="prio-btn on e" data-p="essential" onclick="setPriority(this)"><span class="prio-dot prio-essential"></span>Essential</button>
+        <button class="prio-btn i" data-p="important" onclick="setPriority(this)"><span class="prio-dot prio-important"></span>Important</button>
+        <button class="prio-btn o" data-p="optional" onclick="setPriority(this)"><span class="prio-dot prio-optional"></span>Optional</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Priority determines assignment order — essentials get funded first.</p>
+    </div>
+
     <div id="m-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;">
-      <button class="btn btn-green" style="flex:1;" onclick="saveBill()">Save Bill</button>
+      <button class="btn btn-accent" style="flex:1;" onclick="saveBill()">Save Bill</button>
       <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('bill-overlay')">Cancel</button>
     </div>
   </div>
@@ -340,9 +375,7 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="sched-modal-title">Add Pay Schedule</div>
     <input type="hidden" id="sm-id">
-
-    <div class="fg"><label>Schedule Name</label><input type="text" id="sm-name" placeholder="e.g. Main Job, Side Gig, Benefits" autocomplete="off"></div>
-
+    <div class="fg"><label>Schedule Name</label><input type="text" id="sm-name" placeholder="e.g. Main Job, Side Gig, VA Disability" autocomplete="off"></div>
     <div class="fg">
       <label>How often do you get paid?</label>
       <div class="freq-grid" id="sm-freq-grid">
@@ -350,34 +383,32 @@
         <button class="freq-btn on" data-f="biweekly" onclick="pickSmFreq(this)"><span class="freq-title">Bi-weekly</span><span class="freq-sub">Every 2 weeks</span></button>
         <button class="freq-btn" data-f="semimonthly" onclick="pickSmFreq(this)"><span class="freq-title">Semi-monthly</span><span class="freq-sub">Twice a month</span></button>
         <button class="freq-btn" data-f="monthly" onclick="pickSmFreq(this)"><span class="freq-title">Monthly</span><span class="freq-sub">Once a month</span></button>
-        <button class="freq-btn" data-f="custom" onclick="pickSmFreq(this)" style="grid-column:span 2;"><span class="freq-title">Custom Days</span><span class="freq-sub">You choose which days of the month you get paid</span></button>
+        <button class="freq-btn" data-f="custom" onclick="pickSmFreq(this)" style="grid-column:span 2;"><span class="freq-title">Custom Days</span><span class="freq-sub">Choose specific days of the month</span></button>
       </div>
     </div>
-
-    <!-- Custom days input (shown only for custom) -->
     <div class="fg hidden" id="sm-custom-wrap">
       <label>Pay days of the month</label>
       <input type="text" id="sm-custom-days" placeholder="e.g. 1, 15  or  3, 17, 30" autocomplete="off">
-      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Enter the day numbers separated by commas</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Enter day numbers separated by commas</p>
     </div>
-
-    <!-- Next pay date (hidden for custom) -->
-    <div class="fg" id="sm-date-wrap">
-      <label>Next pay date</label>
-      <input type="date" id="sm-date">
-    </div>
-
-    <div class="fg">
-      <label>Take-home pay per paycheck</label>
-      <div class="input-pre-wrap"><span class="input-pre">$</span><input type="number" id="sm-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal"></div>
-    </div>
-
+    <div class="fg" id="sm-date-wrap"><label>Next pay date</label><input type="date" id="sm-date"></div>
+    <div class="fg"><label>Take-home pay per paycheck</label><div class="ipw"><span class="ipw-pre">$</span><input type="number" id="sm-amount" placeholder="0.00" min="1" step="0.01" inputmode="decimal"></div></div>
     <div id="sm-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;margin-bottom:10px;">
-      <button class="btn btn-green" style="flex:1;" onclick="saveSched()">Save Schedule</button>
+      <button class="btn btn-accent" style="flex:1;" onclick="saveSched()">Save Schedule</button>
       <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('sched-overlay')">Cancel</button>
     </div>
-    <button class="btn btn-red hidden" id="sm-delete-btn" onclick="deleteSched()">Delete This Schedule</button>
+    <button class="btn btn-danger hidden" id="sm-delete-btn" onclick="deleteSched()">Delete This Schedule</button>
+  </div>
+</div>
+
+<!-- ══ TEMPLATES MODAL ══ -->
+<div class="overlay hidden" id="tpl-overlay" onclick="overlayClick(event,'tpl-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Bill Templates</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Tap any template to pre-fill the bill form. Adjust the amount before saving.</p>
+    <div id="tpl-content"></div>
   </div>
 </div>
 
@@ -389,29 +420,67 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const S = {
-  user: null,
-  bills: [],
-  schedules: [],   // array — supports multiple
-  payments: [],
-  strategy: 'proximity',
-  authMode: 'login',
-  smFreq: 'biweekly',
+// ── Priority config ───────────────────────────────
+const PRIO_ORDER  = { essential:0, important:1, optional:2 }
+const PRIO_COLOR  = { essential:'#c8102e', important:'#d97706', optional:'#1d4ed8' }
+const PRIO_LABEL  = { essential:'Essential', important:'Important', optional:'Optional' }
+
+// ── Bill templates ────────────────────────────────
+const TEMPLATES = {
+  Housing:     [
+    { name:'Rent / Mortgage',   amount:1200, due_day:1,  category:'Housing',       priority:'essential' },
+    { name:'HOA Fees',          amount:150,  due_day:1,  category:'Housing',       priority:'important' },
+    { name:'Renters Insurance', amount:20,   due_day:1,  category:'Insurance',     priority:'important' },
+  ],
+  Utilities:   [
+    { name:'Electric',          amount:120,  due_day:15, category:'Utilities',     priority:'essential' },
+    { name:'Water & Sewer',     amount:60,   due_day:20, category:'Utilities',     priority:'essential' },
+    { name:'Gas / Heating',     amount:80,   due_day:10, category:'Utilities',     priority:'essential' },
+    { name:'Internet',          amount:80,   due_day:18, category:'Utilities',     priority:'important' },
+    { name:'Cell Phone',        amount:80,   due_day:10, category:'Utilities',     priority:'important' },
+  ],
+  Insurance:   [
+    { name:'Car Insurance',     amount:150,  due_day:15, category:'Insurance',     priority:'essential' },
+    { name:'Health Insurance',  amount:200,  due_day:1,  category:'Insurance',     priority:'essential' },
+    { name:'Life Insurance',    amount:50,   due_day:1,  category:'Insurance',     priority:'important' },
+  ],
+  Transport:   [
+    { name:'Car Payment',       amount:400,  due_day:25, category:'Transport',     priority:'essential' },
+  ],
+  Subscriptions:[
+    { name:'Netflix',           amount:18,   due_day:1,  category:'Subscriptions', priority:'optional'  },
+    { name:'Spotify',           amount:11,   due_day:1,  category:'Subscriptions', priority:'optional'  },
+    { name:'Amazon Prime',      amount:16,   due_day:1,  category:'Subscriptions', priority:'optional'  },
+    { name:'Hulu',              amount:18,   due_day:1,  category:'Subscriptions', priority:'optional'  },
+    { name:'Disney+',           amount:14,   due_day:1,  category:'Subscriptions', priority:'optional'  },
+  ],
+  Healthcare:  [
+    { name:'Gym Membership',    amount:40,   due_day:1,  category:'Healthcare',    priority:'optional'  },
+    { name:'Prescriptions',     amount:50,   due_day:15, category:'Healthcare',    priority:'important' },
+  ],
+  Debt:        [
+    { name:'Credit Card',       amount:150,  due_day:22, category:'Debt',          priority:'important' },
+    { name:'Student Loans',     amount:200,  due_day:1,  category:'Debt',          priority:'important' },
+  ],
+  Food:        [
+    { name:'Groceries',         amount:400,  due_day:1,  category:'Food',          priority:'essential' },
+  ],
 }
 
+// ── State ─────────────────────────────────────────
+const S = { user:null, bills:[], schedules:[], payments:[], strategy:'proximity', authMode:'login' }
 const NOW = new Date()
 const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
 
 // ── Boot ──────────────────────────────────────────
 async function boot() {
-  const { data: { session } } = await db.auth.getSession()
+  const { data:{ session } } = await db.auth.getSession()
   if (session?.user) { S.user = session.user; await enter() }
   db.auth.onAuthStateChange(async (_e, sess) => {
     if (sess?.user && !S.user) { S.user = sess.user; await enter() }
     else if (!sess?.user) { S.user = null; showAuth() }
   })
 }
-
 async function enter() { showApp(); await loadAll(); renderAll() }
 
 // ── Auth ──────────────────────────────────────────
@@ -422,7 +491,6 @@ function setMode(m) {
   document.getElementById('auth-submit').textContent = m==='login' ? 'Sign In' : 'Create Account'
   clearAlert('auth-alert')
 }
-
 async function doAuth() {
   const email = document.getElementById('auth-email').value.trim()
   const pass  = document.getElementById('auth-pass').value
@@ -432,9 +500,9 @@ async function doAuth() {
   try {
     let err
     if (S.authMode === 'login') {
-      ({ error: err } = await db.auth.signInWithPassword({ email, password: pass }))
+      ({ error:err } = await db.auth.signInWithPassword({ email, password:pass }))
     } else {
-      ({ error: err } = await db.auth.signUp({ email, password: pass }))
+      ({ error:err } = await db.auth.signUp({ email, password:pass }))
       if (!err) { showAlert('auth-alert','✓ Account created! You can now sign in.','success'); btn.disabled=false; btn.textContent='Create Account'; return }
     }
     if (err) throw err
@@ -443,7 +511,6 @@ async function doAuth() {
     btn.disabled=false; btn.textContent = S.authMode==='login' ? 'Sign In' : 'Create Account'
   }
 }
-
 async function doSignOut() { await db.auth.signOut() }
 function showAuth() { document.getElementById('auth-screen').style.display='flex'; document.getElementById('app').style.display='none' }
 function showApp()  { document.getElementById('auth-screen').style.display='none'; document.getElementById('app').style.display='flex' }
@@ -459,8 +526,7 @@ async function loadAll() {
   S.schedules = sr.data ?? []
   S.payments  = pr.data ?? []
 }
-
-function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList() }
+function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderCashFlow() }
 
 // ── Summary ───────────────────────────────────────
 function renderSummary() {
@@ -468,20 +534,16 @@ function renderSummary() {
   const totalBills = S.bills.reduce((s,b) => s+b.amount, 0)
   const paidAmt    = S.bills.filter(b => paidSet.has(b.id)).reduce((s,b) => s+b.amount, 0)
   const stillOwed  = totalBills - paidAmt
-
-  let monthIncome = S.schedules.reduce((sum, s) => {
-    const a = Number(s.amount), f = s.frequency
-    if (f==='weekly') return sum + a*4.33
-    if (f==='biweekly') return sum + a*2.17
-    if (f==='semimonthly') return sum + a*2
-    if (f==='custom') {
-      const days = parseCustomDays(s.custom_days)
-      return sum + a * days.length
-    }
-    return sum + a
+  let monthIncome  = S.schedules.reduce((sum, s) => {
+    const a=Number(s.amount), f=s.frequency
+    if (f==='weekly')      return sum+a*4.33
+    if (f==='biweekly')    return sum+a*2.17
+    if (f==='semimonthly') return sum+a*2
+    if (f==='custom')      return sum+a*parseCustomDays(s.custom_days).length
+    return sum+a
   }, 0)
-
   const leftover = monthIncome - totalBills
+  const pct = monthIncome > 0 ? Math.min((totalBills/monthIncome)*100,100) : 0
 
   document.getElementById('sum-grid').innerHTML = `
     <div class="sum-card">
@@ -491,20 +553,20 @@ function renderSummary() {
     </div>
     <div class="sum-card">
       <div class="sum-label">Still Owed</div>
-      <div class="sum-val ${stillOwed>0?'c-yellow':'c-green'}">$${fmt(stillOwed)}</div>
+      <div class="sum-val ${stillOwed>0?'c-amber':'c-success'}">$${fmt(stillOwed)}</div>
       <div class="sum-sub">this month</div>
     </div>
     <div class="sum-card">
       <div class="sum-label">Monthly Income</div>
       <div class="sum-val">${S.schedules.length?'$'+fmt(monthIncome):'—'}</div>
-      <div class="sum-sub">${S.schedules.length?S.schedules.length+' source'+(S.schedules.length>1?'s':''):'add schedule →'}</div>
+      <div class="sum-sub">${S.schedules.length?S.schedules.length+' source'+(S.schedules.length>1?'s':''):'add schedule'}</div>
     </div>
     <div class="sum-card">
       <div class="sum-label">Left Over</div>
-      <div class="sum-val ${S.schedules.length?(leftover>=0?'c-green':'c-red'):''}">
+      <div class="sum-val ${S.schedules.length?(leftover>=0?'c-success':'c-danger'):''}">
         ${S.schedules.length?'$'+fmt(leftover):'—'}
       </div>
-      <div class="sum-sub">after all bills</div>
+      <div class="sum-sub">${S.schedules.length?'bills use '+Math.round(pct)+'% of income':''}</div>
     </div>`
 }
 
@@ -514,32 +576,23 @@ const FREQ_LABELS = { weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-m
 function renderSchedList() {
   const el = document.getElementById('sched-list')
   if (!S.schedules.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No pay schedules yet.<br>Tap <strong>+ Add Schedule</strong> to get started.</div></div>`
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No pay schedules yet.<br>Tap <strong>+ Add</strong> to get started.</div></div>`
     return
   }
   el.innerHTML = S.schedules.map(s => {
     const freq = FREQ_LABELS[s.frequency] || s.frequency
-    const nextDate = s.frequency === 'custom'
+    const nextDate = s.frequency==='custom'
       ? nextCustomDate(s.custom_days)
       : (s.next_pay_date ? new Date(s.next_pay_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—')
-    const detail = s.frequency === 'custom'
-      ? `Days: ${s.custom_days}`
-      : `Next: ${nextDate}`
-
+    const detail = s.frequency==='custom' ? `Days: ${s.custom_days}` : `Next: ${nextDate}`
     return `<div class="sched-item">
-      <div class="sched-item-header">
-        <div>
-          <div class="sched-name">${s.name}</div>
-          <div class="sched-detail">${freq} · ${detail}</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="sched-amount">$${fmt(s.amount)}</div>
-          <div class="sched-amount-sub">per paycheck</div>
-        </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div><div class="sched-name">${s.name}</div><div class="sched-detail">${freq} · ${detail}</div></div>
+        <div><div class="sched-amount">$${fmt(s.amount)}</div><div class="sched-amount-sub">per paycheck</div></div>
       </div>
       <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
         <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openSchedModal('${s.id}')">Edit</button>
-        <button class="btn btn-red btn-sm" style="flex:1;" onclick="deleteSchedById('${s.id}')">Delete</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteSchedById('${s.id}')">Delete</button>
       </div>
     </div>`
   }).join('')
@@ -547,98 +600,61 @@ function renderSchedList() {
 
 // ── Schedule modal ────────────────────────────────
 let smFreq = 'biweekly'
-
 function openSchedModal(editId) {
   clearAlert('sm-alert')
   document.getElementById('sm-id').value = editId || ''
   document.getElementById('sched-modal-title').textContent = editId ? 'Edit Pay Schedule' : 'Add Pay Schedule'
   document.getElementById('sm-delete-btn').classList.toggle('hidden', !editId)
-
   if (editId) {
     const s = S.schedules.find(x => x.id===editId)
-    document.getElementById('sm-name').value   = s.name
-    document.getElementById('sm-amount').value = s.amount
-    document.getElementById('sm-date').value   = s.next_pay_date || ''
+    document.getElementById('sm-name').value        = s.name
+    document.getElementById('sm-amount').value      = s.amount
+    document.getElementById('sm-date').value        = s.next_pay_date || ''
     document.getElementById('sm-custom-days').value = s.custom_days || ''
     smFreq = s.frequency
   } else {
-    document.getElementById('sm-name').value   = ''
-    document.getElementById('sm-amount').value = ''
-    document.getElementById('sm-custom-days').value = ''
+    document.getElementById('sm-name').value = ''; document.getElementById('sm-amount').value = ''; document.getElementById('sm-custom-days').value = ''
     smFreq = 'biweekly'
-    // default next pay date = next Friday
-    const d = new Date(), diff = (5 - d.getDay() + 7) % 7 || 7
-    d.setDate(d.getDate() + diff)
+    const d = new Date(), diff = (5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
     document.getElementById('sm-date').value = d.toISOString().split('T')[0]
   }
-
-  // Set freq buttons
   document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f===smFreq))
   updateSmFreqUI()
   document.getElementById('sched-overlay').classList.remove('hidden')
   setTimeout(() => document.getElementById('sm-name').focus(), 100)
 }
-
 function pickSmFreq(btn) {
   smFreq = btn.dataset.f
   document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b===btn))
   updateSmFreqUI()
 }
-
 function updateSmFreqUI() {
-  const isCustom = smFreq === 'custom'
+  const isCustom = smFreq==='custom'
   document.getElementById('sm-custom-wrap').classList.toggle('hidden', !isCustom)
   document.getElementById('sm-date-wrap').classList.toggle('hidden', isCustom)
 }
-
 async function saveSched() {
-  const id     = document.getElementById('sm-id').value
-  const name   = document.getElementById('sm-name').value.trim()
-  const amount = parseFloat(document.getElementById('sm-amount').value)
-  const date   = document.getElementById('sm-date').value
-  const customDays = document.getElementById('sm-custom-days').value.trim()
-
-  if (!name)               return showAlert('sm-alert','Enter a schedule name','error')
-  if (!amount || amount<=0) return showAlert('sm-alert','Enter a valid amount','error')
-
-  if (smFreq === 'custom') {
-    const days = parseCustomDays(customDays)
-    if (!days.length) return showAlert('sm-alert','Enter at least one valid day (1–31)','error')
-  } else {
-    if (!date) return showAlert('sm-alert','Select your next pay date','error')
-  }
-
-  const payload = {
-    name,
-    frequency: smFreq,
-    amount,
-    next_pay_date: smFreq === 'custom' ? null : date,
-    custom_days:   smFreq === 'custom' ? customDays : null,
-  }
-
+  const id=document.getElementById('sm-id').value, name=document.getElementById('sm-name').value.trim()
+  const amount=parseFloat(document.getElementById('sm-amount').value), date=document.getElementById('sm-date').value
+  const customDays=document.getElementById('sm-custom-days').value.trim()
+  if (!name)             return showAlert('sm-alert','Enter a schedule name','error')
+  if (!amount||amount<=0) return showAlert('sm-alert','Enter a valid amount','error')
+  if (smFreq==='custom'&&!parseCustomDays(customDays).length) return showAlert('sm-alert','Enter at least one valid day (1–31)','error')
+  if (smFreq!=='custom'&&!date) return showAlert('sm-alert','Select your next pay date','error')
+  const payload = { name, frequency:smFreq, amount, next_pay_date:smFreq==='custom'?null:date, custom_days:smFreq==='custom'?customDays:null }
   let err
-  if (id) {
-    ({ error: err } = await db.from('pay_schedule').update(payload).eq('id', id))
-  } else {
-    ({ error: err } = await db.from('pay_schedule').insert({ ...payload, user_id: S.user.id }))
-  }
+  if (id) ({ error:err } = await db.from('pay_schedule').update(payload).eq('id', id))
+  else    ({ error:err } = await db.from('pay_schedule').insert({ ...payload, user_id:S.user.id }))
   if (err) return showAlert('sm-alert', err.message, 'error')
-
   closeOverlay('sched-overlay')
   const { data } = await db.from('pay_schedule').select('*').order('created_at')
-  S.schedules = data ?? []
-  renderAll()
+  S.schedules = data ?? []; renderAll()
 }
-
-async function deleteSched() {
-  const id = document.getElementById('sm-id').value
-  if (id) await deleteSchedById(id, true)
-}
-
+async function deleteSched() { const id=document.getElementById('sm-id').value; if (id) await deleteSchedById(id, true) }
 async function deleteSchedById(id, fromModal=false) {
   if (!confirm('Delete this pay schedule?')) return
   await db.from('pay_schedule').delete().eq('id', id)
-  S.schedules = S.schedules.filter(s => s.id !== id)
+  S.schedules = S.schedules.filter(s => s.id!==id)
   if (fromModal) closeOverlay('sched-overlay')
   renderAll()
 }
@@ -653,48 +669,52 @@ function setStrat(s) {
 
 function renderPaychecks() {
   const el = document.getElementById('pc-list')
+  const cfSection = document.getElementById('cf-section')
   if (!S.schedules.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Add a <strong>Pay Schedule</strong> so we can assign your bills to paychecks.</div></div>`
-    return
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Add a <strong>Pay Schedule</strong> so we can assign bills to paychecks.</div></div>`
+    cfSection.style.display = 'none'; return
   }
   if (!S.bills.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Add bills in the <strong>Bills</strong> tab first.</div></div>`
-    return
+    cfSection.style.display = 'none'; return
   }
+  cfSection.style.display = 'block'
 
-  // Merge paychecks from all schedules
   const allPaychecks = S.schedules.flatMap(s => genPayDates(s, 3))
-  allPaychecks.sort((a,b) => a.date - b.date)
+  allPaychecks.sort((a,b) => a.date-b.date)
+
+  // Sort bills by priority before assignment
+  const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0) - (PRIO_ORDER[b.priority||'essential']||0))
 
   const groups = S.strategy==='proximity'
-    ? byDueDate(S.bills, allPaychecks, 3)
-    : evenly(S.bills, allPaychecks, 3)
+    ? byDueDate(sortedBills, allPaychecks, 3)
+    : evenly(sortedBills, allPaychecks, 3)
 
-  const paidSet  = new Set(S.payments.map(p => p.bill_id))
-  const todayMs  = new Date().setHours(0,0,0,0)
-  let   foundNext = false
+  const paidSet = new Set(S.payments.map(p => p.bill_id))
+  const todayMs = new Date().setHours(0,0,0,0)
+  let foundNext = false
 
   el.innerHTML = groups.map(g => {
     const isPast = g.paycheck.date.getTime() < todayMs
-    const isNext = !isPast && !foundNext
-    if (isNext) foundNext = true
+    const isNext = !isPast && !foundNext; if (isNext) foundNext = true
     const over = g.remaining < 0
-    const pct  = Math.min((g.totalBills / g.paycheck.netAmount)*100, 100)
+    const pct  = Math.min((g.totalBills/g.paycheck.netAmount)*100, 100)
+    const sourceLabel = S.schedules.length>1 && g.paycheck.schedName ? `<span class="chip chip-job">${g.paycheck.schedName}</span>` : ''
 
     const rows = g.bills.map(ab => {
       const paid = paidSet.has(ab.bill.id)
-      return `<div class="pc-bill-row" style="${paid?'opacity:.45;text-decoration:line-through':''}">
-        <div>
-          <div class="pc-bill-name">${ab.bill.name}</div>
-          <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
+      const prioColor = PRIO_COLOR[ab.bill.priority||'essential']
+      return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${prioColor};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
+          <div>
+            <div class="pc-bill-name">${ab.bill.name}</div>
+            <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
+          </div>
         </div>
         <div class="pc-bill-amt">$${fmt(ab.bill.amount)}</div>
       </div>`
     }).join('')
-
-    // Show schedule name if multiple schedules
-    const sourceLabel = S.schedules.length > 1 && g.paycheck.schedName
-      ? `<span class="chip chip-job">${g.paycheck.schedName}</span>` : ''
 
     return `<div class="pc-card ${isNext?'next':''}">
       <div class="pc-header" onclick="togglePCBody(this)">
@@ -706,7 +726,7 @@ function renderPaychecks() {
         </div>
         <div class="pc-right">
           <div class="pc-amount">$${fmt(g.paycheck.netAmount)}</div>
-          <div class="pc-rem ${over?'c-red':'c-green'}">$${fmt(g.remaining)} left</div>
+          <div class="pc-rem ${over?'c-danger':'c-success'}">$${fmt(g.remaining)} left</div>
         </div>
       </div>
       <div class="pc-body">
@@ -718,14 +738,71 @@ function renderPaychecks() {
         </div>
       </div>
     </div>`
-  }).join('')
-
-  if (!groups.length) el.innerHTML = `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No upcoming assignments found.</div></div>`
+  }).join('') || `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No upcoming assignments found.</div></div>`
 }
 
 function togglePCBody(hdr) {
   const body = hdr.nextElementSibling
-  body.style.display = body.style.display === 'none' ? 'block' : 'none'
+  body.style.display = body.style.display==='none' ? 'block' : 'none'
+}
+
+// ── Cash Flow Timeline ────────────────────────────
+let cfOpen = false
+function toggleCF() {
+  cfOpen = !cfOpen
+  document.getElementById('cf-toggle').classList.toggle('open', cfOpen)
+  document.getElementById('cf-body').classList.toggle('hidden', !cfOpen)
+  if (cfOpen) renderCashFlow()
+}
+
+function renderCashFlow() {
+  if (!cfOpen) return
+  const el = document.getElementById('cf-list')
+  if (!S.schedules.length || !S.bills.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0;">Add bills and a pay schedule to see your cash flow.</p>'; return }
+
+  const today = new Date(); today.setHours(0,0,0,0)
+  const end   = addM(today, 2)
+  const startBal = parseFloat(document.getElementById('cf-balance')?.value || '0') || 0
+
+  // Paychecks
+  const pcEvents = S.schedules.flatMap(s => genPayDates(s, 2))
+    .filter(p => p.date >= today)
+    .map(p => ({ date:p.date, type:'income', name:p.schedName||'Paycheck', amount:p.netAmount, cat:'Income' }))
+
+  // Bills
+  const billEvents = S.bills.flatMap(b =>
+    dueDates(b, today, end).map(d => ({ date:d, type:'bill', name:b.name, amount:-b.amount, cat:b.category, priority:b.priority||'essential' }))
+  )
+
+  const events = [...pcEvents, ...billEvents].sort((a,b) => a.date-b.date)
+  let running = startBal
+
+  if (!events.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0;">No upcoming events found.</p>'; return }
+
+  el.innerHTML = events.slice(0, 40).map(ev => {
+    running += ev.amount
+    const isIncome = ev.amount > 0
+    const parts = ev.date.toLocaleDateString('en-US',{month:'short',day:'numeric'}).split(' ')
+    const prioColor = ev.type==='bill' ? PRIO_COLOR[ev.priority] : null
+
+    return `<div class="cf-event">
+      <div class="cf-date-block">
+        <div class="cf-date-mon">${parts[0]}</div>
+        <div class="cf-date-day" style="color:${isIncome?'var(--blue)':'var(--text)'};">${parts[1].replace(',','')}</div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="cf-event-name" style="display:flex;align-items:center;gap:6px;">
+          ${prioColor?`<span style="width:8px;height:8px;border-radius:50%;background:${prioColor};flex-shrink:0;display:inline-block;"></span>`:''}
+          ${ev.name}
+        </div>
+        <div class="cf-event-sub">${ev.cat}</div>
+      </div>
+      <div class="cf-event-right">
+        <div class="cf-event-amt" style="color:${isIncome?'var(--success)':'var(--danger)'};">${isIncome?'+':''}-$${fmt(Math.abs(ev.amount))}</div>
+        <div class="cf-event-bal" style="color:${running>=0?'var(--muted)':'var(--danger)'};">$${fmt(running)}</div>
+      </div>
+    </div>`
+  }).join('')
 }
 
 // ── Bills ─────────────────────────────────────────
@@ -734,27 +811,44 @@ function renderBills() {
   const paidSet = new Set(S.payments.map(p => p.bill_id))
 
   if (!S.bills.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No bills yet. Tap <strong>+ Add Bill</strong> to get started.</div></div>`
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon">📋</div>
+      <div class="empty-text">No bills yet.<br>Add your first bill or try a template.</div>
+      <button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openTemplates()">Browse Templates</button>
+    </div>`
     return
   }
 
-  el.innerHTML = S.bills.map(b => {
+  // Sort by priority then due_day
+  const sorted = [...S.bills].sort((a,b) => {
+    const po = (PRIO_ORDER[a.priority||'essential']||0) - (PRIO_ORDER[b.priority||'essential']||0)
+    if (po !== 0) return po
+    return (a.due_day||99) - (b.due_day||99)
+  })
+
+  el.innerHTML = sorted.map(b => {
     const paid = paidSet.has(b.id)
+    const prioColor = PRIO_COLOR[b.priority||'essential']
+    const prioLabel = PRIO_LABEL[b.priority||'essential']
     return `<div class="bill-row ${paid?'paid':''}">
       <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">
         ${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}
       </button>
       <div class="bill-info">
-        <div class="bill-name">${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}</div>
-        <div class="bill-meta">${billMeta(b)}</div>
+        <div class="bill-name">
+          <span class="prio-dot" style="background:${prioColor};"></span>
+          ${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}
+          ${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}
+        </div>
+        <div class="bill-meta">${billMeta(b)} · <span style="color:${prioColor};font-weight:600;">${prioLabel}</span></div>
       </div>
       <div class="bill-right">
         <div class="bill-amt">$${fmt(b.amount)}</div>
         <div class="bill-btns">
-          <button class="btn-icon" onclick="openBillModal('${b.id}')">
+          <button class="iBtn" onclick="openBillModal('${b.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
-          <button class="btn-icon del" onclick="delBill('${b.id}')">
+          <button class="iBtn del" onclick="delBill('${b.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
@@ -764,18 +858,14 @@ function renderBills() {
 }
 
 async function togglePaid(id, wasPaid) {
-  if (wasPaid) {
-    await db.from('bill_payments').delete().eq('bill_id', id).eq('month_year', MY)
-  } else {
-    await db.from('bill_payments').insert({ user_id: S.user.id, bill_id: id, month_year: MY })
-  }
+  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id', id).eq('month_year', MY)
+  else         await db.from('bill_payments').insert({ user_id:S.user.id, bill_id:id, month_year:MY })
   const { data } = await db.from('bill_payments').select('*').eq('month_year', MY)
-  S.payments = data ?? []
-  renderBills(); renderSummary(); renderPaychecks()
+  S.payments = data ?? []; renderBills(); renderSummary(); renderPaychecks()
 }
 
 // ── Bill modal ────────────────────────────────────
-let mBillType = 'recurring'
+let mBillType = 'recurring', mPriority = 'essential'
 
 function setBillType(t) {
   mBillType = t
@@ -785,73 +875,122 @@ function setBillType(t) {
   document.getElementById('m-date-wrap').classList.toggle('hidden', t==='recurring')
 }
 
-function openBillModal(editId) {
+function setPriority(btn) {
+  mPriority = btn.dataset.p
+  document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('on'))
+  btn.classList.add('on')
+}
+
+function openBillModal(editId, prefill) {
   clearAlert('m-alert')
   document.getElementById('m-id').value = editId || ''
   document.getElementById('bill-modal-title').textContent = editId ? 'Edit Bill' : 'Add Bill'
   if (editId) {
     const b = S.bills.find(x => x.id===editId)
-    const type = b.bill_type || 'recurring'
     document.getElementById('m-name').value     = b.name
     document.getElementById('m-amount').value   = b.amount
     document.getElementById('m-due').value      = b.due_day || ''
     document.getElementById('m-due-date').value = b.due_date || ''
     document.getElementById('m-cat').value      = b.category
-    setBillType(type)
-  } else {
-    document.getElementById('m-name').value     = ''
-    document.getElementById('m-amount').value   = ''
-    document.getElementById('m-due').value      = ''
+    mPriority = b.priority || 'essential'
+    setBillType(b.bill_type || 'recurring')
+  } else if (prefill) {
+    document.getElementById('m-name').value     = prefill.name
+    document.getElementById('m-amount').value   = prefill.amount
+    document.getElementById('m-due').value      = prefill.due_day || ''
     document.getElementById('m-due-date').value = ''
-    document.getElementById('m-cat').value      = 'Other'
+    document.getElementById('m-cat').value      = prefill.category
+    mPriority = prefill.priority || 'essential'
+    setBillType('recurring')
+  } else {
+    document.getElementById('m-name').value = ''; document.getElementById('m-amount').value = ''
+    document.getElementById('m-due').value = ''; document.getElementById('m-due-date').value = ''
+    document.getElementById('m-cat').value = 'Other'; mPriority = 'essential'
     setBillType('recurring')
   }
+  // Set priority buttons
+  document.querySelectorAll('.prio-btn').forEach(b => { b.classList.remove('on'); if (b.dataset.p===mPriority) b.classList.add('on') })
   document.getElementById('bill-overlay').classList.remove('hidden')
   setTimeout(() => document.getElementById('m-name').focus(), 100)
 }
 
 async function saveBill() {
-  const id     = document.getElementById('m-id').value
-  const name   = document.getElementById('m-name').value.trim()
-  const amount = parseFloat(document.getElementById('m-amount').value)
-  const cat    = document.getElementById('m-cat').value
-
+  const id=document.getElementById('m-id').value, name=document.getElementById('m-name').value.trim()
+  const amount=parseFloat(document.getElementById('m-amount').value), cat=document.getElementById('m-cat').value
   if (!name)                  return showAlert('m-alert','Enter a bill name','error')
-  if (!amount || amount <= 0) return showAlert('m-alert','Enter a valid amount','error')
-
-  let payload = { name, amount, category: cat, bill_type: mBillType }
-
-  if (mBillType === 'recurring') {
+  if (!amount||amount<=0)     return showAlert('m-alert','Enter a valid amount','error')
+  let payload = { name, amount, category:cat, bill_type:mBillType, priority:mPriority }
+  if (mBillType==='recurring') {
     const due = parseInt(document.getElementById('m-due').value)
-    if (!due || due<1 || due>31) return showAlert('m-alert','Due day must be 1–31','error')
-    payload.due_day  = due
-    payload.due_date = null
+    if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error')
+    payload.due_day=due; payload.due_date=null
   } else {
     const dueDate = document.getElementById('m-due-date').value
     if (!dueDate) return showAlert('m-alert','Select a due date','error')
-    payload.due_date = dueDate
-    payload.due_day  = null
+    payload.due_date=dueDate; payload.due_day=null
   }
-
   let err
-  if (id) {
-    ({ error: err } = await db.from('bills').update(payload).eq('id', id))
-  } else {
-    ({ error: err } = await db.from('bills').insert({ ...payload, user_id: S.user.id, is_active: true }))
-  }
+  if (id) ({ error:err } = await db.from('bills').update(payload).eq('id', id))
+  else    ({ error:err } = await db.from('bills').insert({ ...payload, user_id:S.user.id, is_active:true }))
   if (err) return showAlert('m-alert', err.message, 'error')
-
   closeOverlay('bill-overlay')
   const { data } = await db.from('bills').select('*').eq('is_active', true).order('due_day')
-  S.bills = data ?? []
-  renderAll()
+  S.bills = data ?? []; renderAll()
 }
 
 async function delBill(id) {
   if (!confirm('Delete this bill?')) return
-  await db.from('bills').update({ is_active: false }).eq('id', id)
-  S.bills = S.bills.filter(b => b.id !== id)
-  renderAll()
+  await db.from('bills').update({ is_active:false }).eq('id', id)
+  S.bills = S.bills.filter(b => b.id!==id); renderAll()
+}
+
+// ── Templates ─────────────────────────────────────
+function openTemplates() {
+  const el = document.getElementById('tpl-content')
+  el.innerHTML = Object.entries(TEMPLATES).map(([cat, items]) => `
+    <div class="tpl-section">
+      <div class="tpl-section-title">${cat}</div>
+      <div class="tpl-grid">
+        ${items.map(t => `
+          <button class="tpl-btn" onclick="useTpl(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+            <div class="tpl-name">
+              <span class="tpl-dot" style="background:${PRIO_COLOR[t.priority]};"></span>${t.name}
+            </div>
+            <div class="tpl-meta">~$${t.amount} · due ${ordinal(t.due_day)}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('')
+  document.getElementById('tpl-overlay').classList.remove('hidden')
+}
+
+function useTpl(tpl) {
+  closeOverlay('tpl-overlay')
+  openBillModal(null, tpl)
+}
+
+// ── Sample data ───────────────────────────────────
+async function loadSampleData() {
+  if (!confirm('Load sample bills and a pay schedule? You can delete them anytime.')) return
+  const uid = S.user.id
+  const sampleBills = [
+    { user_id:uid, name:'Rent / Mortgage', amount:1200, due_day:1,  category:'Housing',       bill_type:'recurring', priority:'essential', is_active:true },
+    { user_id:uid, name:'Electric',        amount:120,  due_day:15, category:'Utilities',     bill_type:'recurring', priority:'essential', is_active:true },
+    { user_id:uid, name:'Internet',        amount:80,   due_day:18, category:'Utilities',     bill_type:'recurring', priority:'important', is_active:true },
+    { user_id:uid, name:'Car Insurance',   amount:150,  due_day:15, category:'Insurance',     bill_type:'recurring', priority:'essential', is_active:true },
+    { user_id:uid, name:'Car Payment',     amount:400,  due_day:25, category:'Transport',     bill_type:'recurring', priority:'essential', is_active:true },
+    { user_id:uid, name:'Netflix',         amount:18,   due_day:1,  category:'Subscriptions', bill_type:'recurring', priority:'optional',  is_active:true },
+    { user_id:uid, name:'Groceries',       amount:400,  due_day:1,  category:'Food',          bill_type:'recurring', priority:'essential', is_active:true },
+    { user_id:uid, name:'Cell Phone',      amount:80,   due_day:10, category:'Utilities',     bill_type:'recurring', priority:'important', is_active:true },
+  ]
+  const d = new Date(), diff = (5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
+  const sampleSched = { user_id:uid, name:'Main Job', frequency:'biweekly', amount:2100, next_pay_date:d.toISOString().split('T')[0], custom_days:null }
+  await Promise.all([
+    db.from('bills').insert(sampleBills),
+    db.from('pay_schedule').insert(sampleSched),
+  ])
+  await loadAll(); renderAll()
 }
 
 // ── Pages ─────────────────────────────────────────
@@ -862,7 +1001,7 @@ function goPage(p) {
   document.getElementById(`pg-${p}`).classList.add('on')
   document.getElementById(`nb-${p}`).classList.add('on')
   document.getElementById('hdr-title').textContent = PAGE_TITLES[p]
-  document.getElementById('hdr-slogan').style.display = p === 'dashboard' ? 'block' : 'none'
+  document.getElementById('hdr-slogan').style.display = p==='dashboard' ? 'block' : 'none'
 }
 
 // ── Overlay helpers ───────────────────────────────
@@ -875,133 +1014,56 @@ function addM(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x }
 function dStr(d){ return d.toISOString().split('T')[0] }
 function parseD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
 function fmtD(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }
+function parseCustomDays(str){ if(!str) return []; return str.split(',').map(s=>parseInt(s.trim())).filter(n=>n>=1&&n<=31) }
+function nextCustomDate(str){ const days=parseCustomDays(str).sort((a,b)=>a-b); if(!days.length) return '—'; const today=new Date(),d=today.getDate(),m=today.getMonth(),y=today.getFullYear(); for(const day of days){ if(day>=d) return new Date(y,m,day).toLocaleDateString('en-US',{month:'short',day:'numeric'}) } return new Date(y,m+1,days[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }
 
-function parseCustomDays(str) {
-  if (!str) return []
-  return str.split(',').map(s=>parseInt(s.trim())).filter(n=>n>=1&&n<=31)
-}
-
-function nextCustomDate(str) {
-  const days = parseCustomDays(str).sort((a,b)=>a-b)
-  if (!days.length) return '—'
-  const today = new Date()
-  const d = today.getDate(), m = today.getMonth(), y = today.getFullYear()
-  for (const day of days) {
-    if (day >= d) return new Date(y,m,day).toLocaleDateString('en-US',{month:'short',day:'numeric'})
-  }
-  return new Date(y,m+1,days[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'})
-}
-
-function fwdStep(d,f){
-  if(f==='weekly')      return addD(d,7)
-  if(f==='biweekly')    return addD(d,14)
-  if(f==='monthly')     return addM(d,1)
-  return d.getDate()<15 ? new Date(d.getFullYear(),d.getMonth(),15) : new Date(d.getFullYear(),d.getMonth()+1,1)
-}
-function bakStep(d,f){
-  if(f==='weekly')      return addD(d,-7)
-  if(f==='biweekly')    return addD(d,-14)
-  if(f==='monthly')     return addM(d,-1)
-  return d.getDate()>=15 ? new Date(d.getFullYear(),d.getMonth(),1) : new Date(d.getFullYear(),d.getMonth()-1,15)
-}
+function fwdStep(d,f){ if(f==='weekly') return addD(d,7); if(f==='biweekly') return addD(d,14); if(f==='monthly') return addM(d,1); return d.getDate()<15?new Date(d.getFullYear(),d.getMonth(),15):new Date(d.getFullYear(),d.getMonth()+1,1) }
+function bakStep(d,f){ if(f==='weekly') return addD(d,-7); if(f==='biweekly') return addD(d,-14); if(f==='monthly') return addM(d,-1); return d.getDate()>=15?new Date(d.getFullYear(),d.getMonth(),1):new Date(d.getFullYear(),d.getMonth()-1,15) }
 
 function genPayDates(sched, mo) {
   const today=new Date(); today.setHours(0,0,0,0)
-  const end=addM(today,mo), look=addD(today,-30)
-  const out=[]
-
-  if (sched.frequency === 'custom') {
-    const days = parseCustomDays(sched.custom_days).sort((a,b)=>a-b)
-    if (!days.length) return out
-    let y=look.getFullYear(), m=look.getMonth()
-    while(new Date(y,m,1)<=end){
-      for(const day of days){
-        const lastDay=new Date(y,m+1,0).getDate()
-        const clampedDay=Math.min(day,lastDay)
-        const pd=new Date(y,m,clampedDay)
-        if(pd>=look && pd<=end) out.push({date:pd,dateStr:dStr(pd),label:fmtD(pd),netAmount:Number(sched.amount),schedName:sched.name})
-      }
-      m++; if(m>11){m=0;y++}
-    }
+  const end=addM(today,mo), look=addD(today,-30), out=[]
+  if (sched.frequency==='custom') {
+    const days=parseCustomDays(sched.custom_days).sort((a,b)=>a-b); if(!days.length) return out
+    let y=look.getFullYear(),m=look.getMonth()
+    while(new Date(y,m,1)<=end){ for(const day of days){ const last=new Date(y,m+1,0).getDate(),pd=new Date(y,Math.min(day,last)>0?m:m,Math.min(day,last)); const pd2=new Date(y,m,Math.min(day,last)); if(pd2>=look&&pd2<=end) out.push({date:pd2,dateStr:dStr(pd2),label:fmtD(pd2),netAmount:Number(sched.amount),schedName:sched.name}) }; m++; if(m>11){m=0;y++} }
     return out
   }
-
   let cur=parseD(sched.next_pay_date)
   while(cur>look) cur=bakStep(cur,sched.frequency)
-  while(cur<=end){
-    if(cur>=look) out.push({date:new Date(cur),dateStr:dStr(cur),label:fmtD(cur),netAmount:Number(sched.amount),schedName:sched.name})
-    cur=fwdStep(cur,sched.frequency)
-  }
+  while(cur<=end){ if(cur>=look) out.push({date:new Date(cur),dateStr:dStr(cur),label:fmtD(cur),netAmount:Number(sched.amount),schedName:sched.name}); cur=fwdStep(cur,sched.frequency) }
   return out
 }
 
 function dueDates(bill,start,end){
-  // One-time bill: single specific date
-  if (bill.bill_type === 'single' && bill.due_date) {
-    const d = parseD(bill.due_date)
-    return (d >= start && d <= end) ? [d] : []
-  }
-  // Recurring: every month on due_day
+  if(bill.bill_type==='single'&&bill.due_date){ const d=parseD(bill.due_date); return(d>=start&&d<=end)?[d]:[] }
   const dates=[]; let y=start.getFullYear(),m=start.getMonth()
-  while(true){
-    const last=new Date(y,m+1,0).getDate(), day=Math.min(bill.due_day,last)
-    const d=new Date(y,m,day)
-    if(d>end) break
-    if(d>=start) dates.push(d)
-    m++; if(m>11){m=0;y++}
-  }
+  while(true){ const last=new Date(y,m+1,0).getDate(),day=Math.min(bill.due_day,last),d=new Date(y,m,day); if(d>end) break; if(d>=start) dates.push(d); m++; if(m>11){m=0;y++} }
   return dates
 }
 
 function byDueDate(bills,paychecks,mo){
-  const today=new Date(); today.setHours(0,0,0,0)
-  const end=addM(today,mo)
-  const map=new Map()
-  paychecks.forEach(p=>map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
+  const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,mo)
+  const map=new Map(); paychecks.forEach(p=>map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
   const sorted=[...paychecks].sort((a,b)=>a.date-b.date)
-  for(const bill of bills){
-    for(const dd of dueDates(bill,today,end)){
-      let chosen=null
-      for(const p of sorted){ if(p.date<=dd) chosen=p; else break }
-      if(!chosen) chosen=sorted.find(p=>p.date>dd)??null
-      if(!chosen) continue
-      const g=map.get(chosen.dateStr)
-      g.bills.push({bill,dueDate:dd}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills
-    }
-  }
+  for(const bill of bills){ for(const dd of dueDates(bill,today,end)){ let chosen=null; for(const p of sorted){ if(p.date<=dd) chosen=p; else break }; if(!chosen) chosen=sorted.find(p=>p.date>dd)??null; if(!chosen) continue; const g=map.get(chosen.dateStr); g.bills.push({bill,dueDate:dd}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills } }
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
 
 function evenly(bills,paychecks,mo){
-  const today=new Date(); today.setHours(0,0,0,0)
-  const end=addM(today,mo)
-  const map=new Map()
-  paychecks.forEach(p=>map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
+  const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,mo)
+  const map=new Map(); paychecks.forEach(p=>map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
   const sorted=[...paychecks].sort((a,b)=>a.date-b.date)
-  const all=[]
-  for(const bill of bills) for(const dd of dueDates(bill,today,end)) all.push({bill,dueDate:dd})
+  const all=[]; for(const bill of bills) for(const dd of dueDates(bill,today,end)) all.push({bill,dueDate:dd})
   all.sort((a,b)=>a.dueDate-b.dueDate)
-  for(const {bill,dueDate} of all){
-    const elig=sorted.filter(p=>p.date<=dueDate)
-    const cands=elig.length?elig:[sorted.find(p=>p.date>dueDate)].filter(Boolean)
-    if(!cands.length) continue
-    const chosen=cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
-    const g=map.get(chosen.dateStr)
-    g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills
-  }
+  for(const {bill,dueDate} of all){ const elig=sorted.filter(p=>p.date<=dueDate); const cands=elig.length?elig:[sorted.find(p=>p.date>dueDate)].filter(Boolean); if(!cands.length) continue; const chosen=cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b); const g=map.get(chosen.dateStr); g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills }
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
 
 // ── Helpers ───────────────────────────────────────
-function billMeta(b) {
-  if (b.bill_type === 'single' && b.due_date) {
-    const d = new Date(b.due_date + 'T00:00:00')
-    return `One-time · Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}`
-  }
-  return `Recurring · Due on the ${ordinal(b.due_day)} · ${b.category}`
-}
 function fmt(n){ return Number(n).toFixed(2) }
 function ordinal(n){ const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
+function billMeta(b){ if(b.bill_type==='single'&&b.due_date){ const d=new Date(b.due_date+'T00:00:00'); return `Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}` }; return `Due the ${ordinal(b.due_day)} · ${b.category}` }
 function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
 function clearAlert(id){ const el=document.getElementById(id); el.classList.add('hidden'); el.textContent='' }
 
