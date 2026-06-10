@@ -1435,9 +1435,8 @@ function updateIncomePreview() {
 // Each bill appears exactly once. Paycheck can be previous month (for bills due on the 1st).
 function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const refStart = new Date(refYear, refMonth, 1)
-  // Extend end to the 14th of next month to capture bills due in the first
-  // two weeks of next month (e.g. Auto Insurance due the 8th)
-  const refEnd   = new Date(refYear, refMonth + 1, 14)
+  // Bills scope: current month only. Each paycheck shows in its own month view.
+  const refEnd   = new Date(refYear, refMonth + 1, 0) // last day of ref month
 
   // One occurrence per bill for the ref month
   const occurrences = []
