@@ -15,9 +15,6 @@
       --amber:#d97706; --amber-bg:rgba(217,119,6,0.08);
       --success:#16a34a; --success-bg:rgba(22,163,74,0.08);
       --danger:#c8102e; --danger-bg:rgba(200,16,46,0.08);
-      /* legacy aliases so existing code still works */
-      --green:var(--accent); --green-dark:var(--accent-dark); --green-bg:var(--accent-bg);
-      --red:var(--accent); --red-bg:var(--accent-bg); --yellow:var(--blue); --yellow-bg:var(--blue-bg);
       --radius:14px; --radius-sm:10px;
     }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -62,29 +59,41 @@
 
     /* ── App shell ── */
     #app{display:none;flex-direction:column;min-height:100vh}
-    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+
+    /* ── Top header ── */
+    .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
     .header-brand{display:flex;align-items:center;gap:8px}
     .signout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:6px 10px;border-radius:8px;font-weight:500}
     .signout-btn:hover{background:var(--surface2);color:var(--text)}
-    .page-content{flex:1;padding:20px;padding-bottom:100px}
+
+    /* ── Tab strip ── */
+    .tab-strip{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:57px;z-index:20}
+    .tab-strip::-webkit-scrollbar{display:none}
+    .tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 16px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0;transition:color .15s;background:none;border-left:none;border-right:none;border-top:none;text-transform:uppercase;letter-spacing:.4px}
+    .tab-item.on{color:var(--accent);border-bottom-color:var(--accent)}
+    .tab-item svg{width:18px;height:18px}
+
+    /* ── Page content ── */
+    .page-content{flex:1;padding:20px;padding-bottom:env(safe-area-inset-bottom,20px)}
     .page{display:none}.page.on{display:block}
-
-    /* ── Bottom nav ── */
-    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,12px);z-index:20}
-    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;transition:color .15s}
-    .nav-btn.on{color:var(--accent)}.nav-btn svg{width:22px;height:22px}
-
-    /* ── Section header ── */
-    .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
     .sec-title{font-size:17px;font-weight:700}
 
-    /* ── Summary grid ── */
-    .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
-    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-    .sum-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;font-weight:600}
-    .sum-val{font-size:24px;font-weight:800;line-height:1}
-    .sum-sub{font-size:11px;color:var(--muted);margin-top:5px}
-    .c-success{color:var(--success)}.c-danger{color:var(--danger)}.c-amber{color:var(--amber)}.c-blue{color:var(--blue)}
+    /* ── Dashboard summary cards ── */
+    .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+    .dash-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 16px;position:relative;overflow:hidden}
+    .dash-card-accent{border-color:var(--accent)}
+    .dash-card-blue{border-color:var(--blue)}
+    .dash-card-success{border-color:var(--success)}
+    .dash-icon{position:absolute;top:12px;right:12px;opacity:.12;font-size:36px;line-height:1}
+    .dash-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
+    .dash-value{font-size:26px;font-weight:800;line-height:1;margin-bottom:4px}
+    .dash-sub{font-size:12px;color:var(--muted)}
+    .c-success{color:var(--success)}.c-danger{color:var(--danger)}.c-amber{color:var(--amber)}.c-blue{color:var(--blue)}.c-accent{color:var(--accent)}
+
+    /* ── Progress ring ── */
+    .ring-wrap{display:flex;align-items:center;gap:12px;margin-top:4px}
+    .ring-label{font-size:12px;color:var(--muted)}
 
     /* ── Strategy pills ── */
     .strat-wrap{display:flex;gap:6px}
@@ -117,9 +126,8 @@
     .chip-job{background:var(--surface2);color:var(--muted);font-size:10px;padding:2px 7px;margin-left:6px}
     .chip-single{background:var(--blue-bg);color:var(--blue);font-size:10px;padding:2px 7px;margin-left:6px}
 
-    /* ── Priority dots ── */
-    .prio-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;margin-right:2px}
-    .prio-essential{background:#c8102e}.prio-important{background:#d97706}.prio-optional{background:#1d4ed8}
+    /* ── Priority ── */
+    .prio-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
     .prio-btn{padding:9px 6px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
     .prio-btn.on.e{border-color:#c8102e;background:rgba(200,16,46,.08);color:#c8102e}
     .prio-btn.on.i{border-color:#d97706;background:rgba(217,119,6,.08);color:#d97706}
@@ -132,14 +140,14 @@
     .check-circle.on{background:var(--success);border-color:var(--success)}
     .bill-info{flex:1;min-width:0}
     .bill-name{font-weight:700;font-size:15px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
-    .bill-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px}
+    .bill-meta{font-size:12px;color:var(--muted);margin-top:3px}
     .bill-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
     .bill-amt{font-weight:800;font-size:16px}.bill-btns{display:flex;gap:6px}
 
     /* ── Schedule items ── */
     .sched-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
     .sched-name{font-weight:700;font-size:15px}.sched-detail{font-size:12px;color:var(--muted);margin-top:2px}
-    .sched-amount{font-weight:800;font-size:18px;color:var(--accent)}.sched-amount-sub{font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
+    .sched-amount{font-weight:800;font-size:18px;color:var(--accent)}
 
     /* ── Frequency grid ── */
     .freq-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
@@ -147,50 +155,59 @@
     .freq-btn.on{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
     .freq-title{font-size:14px;font-weight:700;display:block}.freq-sub{font-size:11px;opacity:.7;display:block;margin-top:3px}
 
-    /* ── Modals ── */
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-    .modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:22px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
-    .modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px}
-    .modal-title{font-size:20px;font-weight:800;margin-bottom:20px}
+    /* ── Reports ── */
+    .report-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+    .report-title{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)}
+    .cat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .cat-name{font-size:13px;font-weight:600;min-width:90px;flex-shrink:0}
+    .cat-bar-bg{flex:1;height:10px;background:var(--surface2);border-radius:99px;overflow:hidden}
+    .cat-bar-fill{height:100%;border-radius:99px;background:var(--accent)}
+    .cat-amt{font-size:13px;font-weight:700;min-width:56px;text-align:right;flex-shrink:0}
+    .stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+    .stat-row:last-child{border-bottom:none}
+    .stat-label{color:var(--muted)}.stat-val{font-weight:700}
 
-    /* ── Template grid ── */
-    .tpl-section{margin-bottom:18px}
-    .tpl-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-    .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .tpl-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;cursor:pointer;text-align:left;transition:all .15s}
-    .tpl-btn:hover{border-color:var(--accent);background:var(--accent-bg)}
-    .tpl-name{font-size:13px;font-weight:600;color:var(--text)}
-    .tpl-meta{font-size:11px;color:var(--muted);margin-top:2px}
-    .tpl-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+    /* ── Settings ── */
+    .setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+    .setting-row:last-child{border-bottom:none}
+    .setting-label{font-size:14px;font-weight:600}
+    .setting-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .setting-val{font-size:13px;color:var(--muted)}
 
-    /* ── Cash flow timeline ── */
+    /* ── Cash flow ── */
     .cf-section{margin-top:20px}
-    .cf-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:0}
+    .cf-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius)}
     .cf-toggle.open{border-radius:var(--radius) var(--radius) 0 0;border-bottom:none}
-    .cf-toggle-title{font-weight:700;font-size:15px}
-    .cf-toggle-sub{font-size:12px;color:var(--muted)}
-    .cf-chevron{transition:transform .2s;color:var(--muted)}
-    .cf-toggle.open .cf-chevron{transform:rotate(180deg)}
+    .cf-title{font-weight:700;font-size:15px}.cf-sub{font-size:12px;color:var(--muted)}
     .cf-body{background:var(--surface);border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:0 16px 14px}
-    .cf-balance-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:4px}
-    .cf-balance-label{font-size:13px;font-weight:600;white-space:nowrap}
+    .cf-bal-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:4px}
     .cf-event{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(184,204,228,.4)}
     .cf-event:last-child{border-bottom:none}
     .cf-date-block{text-align:center;min-width:36px;flex-shrink:0}
     .cf-date-mon{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
     .cf-date-day{font-size:18px;font-weight:800}
-    .cf-event-name{font-size:13px;font-weight:600}
-    .cf-event-sub{font-size:11px;color:var(--muted);margin-top:1px}
+    .cf-event-name{font-size:13px;font-weight:600}.cf-event-sub{font-size:11px;color:var(--muted);margin-top:1px}
     .cf-event-right{text-align:right;flex-shrink:0}
-    .cf-event-amt{font-size:14px;font-weight:800}
-    .cf-event-bal{font-size:11px;margin-top:1px;font-weight:600}
+    .cf-event-amt{font-size:14px;font-weight:800}.cf-event-bal{font-size:11px;margin-top:1px;font-weight:600}
 
-    /* ── Empty state ── */
+    /* ── Templates ── */
+    .tpl-section{margin-bottom:18px}
+    .tpl-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .tpl-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;cursor:pointer;text-align:left;transition:all .15s}
+    .tpl-btn:hover{border-color:var(--accent);background:var(--accent-bg)}
+    .tpl-name{font-size:13px;font-weight:600;color:var(--text)}.tpl-meta{font-size:11px;color:var(--muted);margin-top:2px}
+    .tpl-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+
+    /* ── Modals ── */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+    .modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:22px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+    .modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px}
+    .modal-title{font-size:20px;font-weight:800;margin-bottom:20px}
+
+    /* ── Empty ── */
     .empty{text-align:center;padding:40px 20px;color:var(--muted)}
     .empty-icon{font-size:44px;margin-bottom:12px}.empty-text{font-size:15px;line-height:1.5;margin-bottom:16px}
-
-    /* ── Balance strip ── */
-    .balance-strip{background:var(--blue-bg);border:1px solid rgba(29,78,216,.2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
   </style>
 </head>
 <body>
@@ -222,6 +239,8 @@
 
 <!-- ══ APP ══ -->
 <div id="app">
+
+  <!-- Top header -->
   <div class="app-header">
     <div class="header-brand">
       <svg width="22" height="22" viewBox="0 0 64 64" fill="none" style="flex-shrink:0;">
@@ -234,18 +253,42 @@
         <text x="32" y="37" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#0a1f5c">$</text>
       </svg>
       <div>
-        <div id="hdr-title" style="font-size:17px;font-weight:800;line-height:1.1;">Dollar Guide</div>
+        <div style="font-size:17px;font-weight:800;line-height:1.1;">Dollar Guide</div>
         <div id="hdr-slogan" style="font-size:10px;color:var(--muted);font-style:italic;">Guiding every dollar to where it belongs.</div>
       </div>
     </div>
     <button class="signout-btn" onclick="doSignOut()">Sign out</button>
   </div>
 
+  <!-- Tab strip nav -->
+  <div class="tab-strip">
+    <button class="tab-item on" id="nb-dashboard" onclick="goPage('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </button>
+    <button class="tab-item" id="nb-bills" onclick="goPage('bills')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Bills
+    </button>
+    <button class="tab-item" id="nb-paychecks" onclick="goPage('paychecks')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Paychecks
+    </button>
+    <button class="tab-item" id="nb-reports" onclick="goPage('reports')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Reports
+    </button>
+    <button class="tab-item" id="nb-settings" onclick="goPage('settings')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Settings
+    </button>
+  </div>
+
   <div class="page-content">
 
-    <!-- Dashboard -->
+    <!-- ── DASHBOARD ── -->
     <div class="page on" id="pg-dashboard">
-      <div class="sum-grid" id="sum-grid"></div>
+      <div class="dash-grid" id="sum-grid"></div>
       <div class="sec-header">
         <span class="sec-title">Paychecks</span>
         <div class="strat-wrap">
@@ -254,18 +297,14 @@
         </div>
       </div>
       <div id="pc-list"></div>
-      <!-- Cash Flow -->
       <div class="cf-section" id="cf-section" style="display:none;">
         <div class="cf-toggle" id="cf-toggle" onclick="toggleCF()">
-          <div>
-            <div class="cf-toggle-title">Cash Flow Timeline</div>
-            <div class="cf-toggle-sub">Projected money in &amp; out</div>
-          </div>
-          <svg class="cf-chevron" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          <div><div class="cf-title">Cash Flow Timeline</div><div class="cf-sub">Projected money in &amp; out</div></div>
+          <svg id="cf-chevron" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--muted);transition:transform .2s;"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </div>
         <div class="cf-body hidden" id="cf-body">
-          <div class="cf-balance-row">
-            <div class="cf-balance-label">Current balance</div>
+          <div class="cf-bal-row">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;">Current balance</div>
             <div class="ipw" style="flex:1;max-width:160px;"><span class="ipw-pre">$</span><input type="number" id="cf-balance" placeholder="0.00" step="0.01" inputmode="decimal" oninput="renderCashFlow()" style="padding:9px 9px 9px 22px;font-size:13px;"></div>
           </div>
           <div id="cf-list"></div>
@@ -273,20 +312,20 @@
       </div>
     </div>
 
-    <!-- Bills -->
+    <!-- ── BILLS ── -->
     <div class="page" id="pg-bills">
       <div class="sec-header">
         <span class="sec-title">My Bills</span>
         <div style="display:flex;gap:8px;">
           <button class="btn-outline" onclick="openTemplates()">Templates</button>
-          <button class="btn btn-accent btn-sm" onclick="openBillModal()">+ Add Bill</button>
+          <button class="btn btn-accent btn-sm" onclick="openBillModal()">+ Add</button>
         </div>
       </div>
       <div id="bills-list"></div>
     </div>
 
-    <!-- Schedule -->
-    <div class="page" id="pg-schedule">
+    <!-- ── PAYCHECKS ── -->
+    <div class="page" id="pg-paychecks">
       <div class="sec-header">
         <span class="sec-title">Pay Schedules</span>
         <button class="btn btn-accent btn-sm" onclick="openSchedModal()">+ Add</button>
@@ -295,22 +334,43 @@
       <div id="sched-list"></div>
     </div>
 
-  </div>
+    <!-- ── REPORTS ── -->
+    <div class="page" id="pg-reports">
+      <div class="sec-title" style="margin-bottom:18px;">Reports</div>
+      <div id="reports-content"></div>
+    </div>
 
-  <nav class="bottom-nav">
-    <button class="nav-btn on" id="nb-dashboard" onclick="goPage('dashboard')">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-      Dashboard
-    </button>
-    <button class="nav-btn" id="nb-bills" onclick="goPage('bills')">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      Bills
-    </button>
-    <button class="nav-btn" id="nb-schedule" onclick="goPage('schedule')">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Schedule
-    </button>
-  </nav>
+    <!-- ── SETTINGS ── -->
+    <div class="page" id="pg-settings">
+      <div class="sec-title" style="margin-bottom:18px;">Settings</div>
+      <div class="report-card">
+        <div class="report-title">Account</div>
+        <div class="setting-row">
+          <div><div class="setting-label">Email</div><div class="setting-sub" id="settings-email">—</div></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Sign Out</div><div class="setting-sub">Sign out of your account</div></div>
+          <button class="btn btn-danger btn-sm" onclick="doSignOut()">Sign Out</button>
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-title">About</div>
+        <div class="setting-row"><div class="setting-label">Dollar Guide</div><div class="setting-val">Version 2.0</div></div>
+        <div class="setting-row"><div class="setting-label">Data</div><div class="setting-val">Stored securely in Supabase</div></div>
+        <div class="setting-row" style="border-bottom:none;">
+          <div><div class="setting-label">Load Sample Data</div><div class="setting-sub">Pre-fill with demo bills &amp; schedule</div></div>
+          <button class="btn btn-gray btn-sm" onclick="loadSampleData()">Load</button>
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-title">Priority Guide</div>
+        <div class="setting-row"><div><div class="setting-label" style="color:#c8102e;">● Essential</div><div class="setting-sub">Rent, utilities, insurance — assigned first</div></div></div>
+        <div class="setting-row"><div><div class="setting-label" style="color:#d97706;">● Important</div><div class="setting-sub">Phone, internet, debt payments</div></div></div>
+        <div class="setting-row" style="border-bottom:none;"><div><div class="setting-label" style="color:#1d4ed8;">● Optional</div><div class="setting-sub">Subscriptions, gym — assigned last</div></div></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <!-- ══ BILL MODAL ══ -->
@@ -319,7 +379,6 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="bill-modal-title">Add Bill</div>
     <input type="hidden" id="m-id">
-
     <div class="fg">
       <label>Bill Type</label>
       <div class="toggle-row" style="margin-bottom:0;">
@@ -327,10 +386,8 @@
         <button class="toggle-btn" id="m-type-single" onclick="setBillType('single')">1️⃣ One-Time</button>
       </div>
     </div>
-
     <div class="fg"><label>Bill Name</label><input type="text" id="m-name" placeholder="e.g. Rent, Electric, Netflix" autocomplete="off"></div>
     <div class="fg"><label>Amount</label><div class="ipw"><span class="ipw-pre">$</span><input type="number" id="m-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div></div>
-
     <div class="fg" id="m-due-wrap">
       <label>Due Day of Month (1–31)</label>
       <input type="number" id="m-due" placeholder="e.g. 15" min="1" max="31" inputmode="numeric">
@@ -341,7 +398,6 @@
       <input type="date" id="m-due-date">
       <p style="font-size:11px;color:var(--muted);margin-top:5px;">This bill appears once on this date</p>
     </div>
-
     <div class="fg">
       <label>Category</label>
       <select id="m-cat">
@@ -350,17 +406,15 @@
         <option>Healthcare</option><option>Debt</option><option selected>Other</option>
       </select>
     </div>
-
     <div class="fg">
       <label>Priority</label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <button class="prio-btn on e" data-p="essential" onclick="setPriority(this)"><span class="prio-dot prio-essential"></span>Essential</button>
-        <button class="prio-btn i" data-p="important" onclick="setPriority(this)"><span class="prio-dot prio-important"></span>Important</button>
-        <button class="prio-btn o" data-p="optional" onclick="setPriority(this)"><span class="prio-dot prio-optional"></span>Optional</button>
+        <button class="prio-btn on e" data-p="essential" onclick="setPriority(this)"><span class="prio-dot" style="background:#c8102e;"></span>Essential</button>
+        <button class="prio-btn i" data-p="important" onclick="setPriority(this)"><span class="prio-dot" style="background:#d97706;"></span>Important</button>
+        <button class="prio-btn o" data-p="optional" onclick="setPriority(this)"><span class="prio-dot" style="background:#1d4ed8;"></span>Optional</button>
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Priority determines assignment order — essentials get funded first.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Essentials get funded before important, important before optional.</p>
     </div>
-
     <div id="m-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="saveBill()">Save Bill</button>
@@ -407,7 +461,7 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Bill Templates</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Tap any template to pre-fill the bill form. Adjust the amount before saving.</p>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Tap any template to pre-fill the add bill form.</p>
     <div id="tpl-content"></div>
   </div>
 </div>
@@ -420,54 +474,21 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ── Priority config ───────────────────────────────
-const PRIO_ORDER  = { essential:0, important:1, optional:2 }
-const PRIO_COLOR  = { essential:'#c8102e', important:'#d97706', optional:'#1d4ed8' }
-const PRIO_LABEL  = { essential:'Essential', important:'Important', optional:'Optional' }
+const PRIO_ORDER = { essential:0, important:1, optional:2 }
+const PRIO_COLOR = { essential:'#c8102e', important:'#d97706', optional:'#1d4ed8' }
+const PRIO_LABEL = { essential:'Essential', important:'Important', optional:'Optional' }
 
-// ── Bill templates ────────────────────────────────
 const TEMPLATES = {
-  Housing:     [
-    { name:'Rent / Mortgage',   amount:1200, due_day:1,  category:'Housing',       priority:'essential' },
-    { name:'HOA Fees',          amount:150,  due_day:1,  category:'Housing',       priority:'important' },
-    { name:'Renters Insurance', amount:20,   due_day:1,  category:'Insurance',     priority:'important' },
-  ],
-  Utilities:   [
-    { name:'Electric',          amount:120,  due_day:15, category:'Utilities',     priority:'essential' },
-    { name:'Water & Sewer',     amount:60,   due_day:20, category:'Utilities',     priority:'essential' },
-    { name:'Gas / Heating',     amount:80,   due_day:10, category:'Utilities',     priority:'essential' },
-    { name:'Internet',          amount:80,   due_day:18, category:'Utilities',     priority:'important' },
-    { name:'Cell Phone',        amount:80,   due_day:10, category:'Utilities',     priority:'important' },
-  ],
-  Insurance:   [
-    { name:'Car Insurance',     amount:150,  due_day:15, category:'Insurance',     priority:'essential' },
-    { name:'Health Insurance',  amount:200,  due_day:1,  category:'Insurance',     priority:'essential' },
-    { name:'Life Insurance',    amount:50,   due_day:1,  category:'Insurance',     priority:'important' },
-  ],
-  Transport:   [
-    { name:'Car Payment',       amount:400,  due_day:25, category:'Transport',     priority:'essential' },
-  ],
-  Subscriptions:[
-    { name:'Netflix',           amount:18,   due_day:1,  category:'Subscriptions', priority:'optional'  },
-    { name:'Spotify',           amount:11,   due_day:1,  category:'Subscriptions', priority:'optional'  },
-    { name:'Amazon Prime',      amount:16,   due_day:1,  category:'Subscriptions', priority:'optional'  },
-    { name:'Hulu',              amount:18,   due_day:1,  category:'Subscriptions', priority:'optional'  },
-    { name:'Disney+',           amount:14,   due_day:1,  category:'Subscriptions', priority:'optional'  },
-  ],
-  Healthcare:  [
-    { name:'Gym Membership',    amount:40,   due_day:1,  category:'Healthcare',    priority:'optional'  },
-    { name:'Prescriptions',     amount:50,   due_day:15, category:'Healthcare',    priority:'important' },
-  ],
-  Debt:        [
-    { name:'Credit Card',       amount:150,  due_day:22, category:'Debt',          priority:'important' },
-    { name:'Student Loans',     amount:200,  due_day:1,  category:'Debt',          priority:'important' },
-  ],
-  Food:        [
-    { name:'Groceries',         amount:400,  due_day:1,  category:'Food',          priority:'essential' },
-  ],
+  Housing:      [{ name:'Rent / Mortgage', amount:1200, due_day:1, category:'Housing', priority:'essential' },{ name:'HOA Fees', amount:150, due_day:1, category:'Housing', priority:'important' },{ name:'Renters Insurance', amount:20, due_day:1, category:'Insurance', priority:'important' }],
+  Utilities:    [{ name:'Electric', amount:120, due_day:15, category:'Utilities', priority:'essential' },{ name:'Water & Sewer', amount:60, due_day:20, category:'Utilities', priority:'essential' },{ name:'Gas / Heating', amount:80, due_day:10, category:'Utilities', priority:'essential' },{ name:'Internet', amount:80, due_day:18, category:'Utilities', priority:'important' },{ name:'Cell Phone', amount:80, due_day:10, category:'Utilities', priority:'important' }],
+  Insurance:    [{ name:'Car Insurance', amount:150, due_day:15, category:'Insurance', priority:'essential' },{ name:'Health Insurance', amount:200, due_day:1, category:'Insurance', priority:'essential' },{ name:'Life Insurance', amount:50, due_day:1, category:'Insurance', priority:'important' }],
+  Transport:    [{ name:'Car Payment', amount:400, due_day:25, category:'Transport', priority:'essential' }],
+  Subscriptions:[{ name:'Netflix', amount:18, due_day:1, category:'Subscriptions', priority:'optional' },{ name:'Spotify', amount:11, due_day:1, category:'Subscriptions', priority:'optional' },{ name:'Amazon Prime', amount:16, due_day:1, category:'Subscriptions', priority:'optional' },{ name:'Hulu', amount:18, due_day:1, category:'Subscriptions', priority:'optional' },{ name:'Disney+', amount:14, due_day:1, category:'Subscriptions', priority:'optional' }],
+  Healthcare:   [{ name:'Gym Membership', amount:40, due_day:1, category:'Healthcare', priority:'optional' },{ name:'Prescriptions', amount:50, due_day:15, category:'Healthcare', priority:'important' }],
+  Debt:         [{ name:'Credit Card', amount:150, due_day:22, category:'Debt', priority:'important' },{ name:'Student Loans', amount:200, due_day:1, category:'Debt', priority:'important' }],
+  Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-// ── State ─────────────────────────────────────────
 const S = { user:null, bills:[], schedules:[], payments:[], strategy:'proximity', authMode:'login' }
 const NOW = new Date()
 const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
@@ -492,24 +513,16 @@ function setMode(m) {
   clearAlert('auth-alert')
 }
 async function doAuth() {
-  const email = document.getElementById('auth-email').value.trim()
-  const pass  = document.getElementById('auth-pass').value
-  const btn   = document.getElementById('auth-submit')
-  if (!email || !pass) return showAlert('auth-alert','Please fill in both fields','error')
-  btn.disabled = true; btn.textContent = 'Please wait…'
+  const email=document.getElementById('auth-email').value.trim(), pass=document.getElementById('auth-pass').value
+  const btn=document.getElementById('auth-submit')
+  if (!email||!pass) return showAlert('auth-alert','Please fill in both fields','error')
+  btn.disabled=true; btn.textContent='Please wait…'
   try {
     let err
-    if (S.authMode === 'login') {
-      ({ error:err } = await db.auth.signInWithPassword({ email, password:pass }))
-    } else {
-      ({ error:err } = await db.auth.signUp({ email, password:pass }))
-      if (!err) { showAlert('auth-alert','✓ Account created! You can now sign in.','success'); btn.disabled=false; btn.textContent='Create Account'; return }
-    }
+    if (S.authMode==='login') ({ error:err } = await db.auth.signInWithPassword({ email, password:pass }))
+    else { ({ error:err } = await db.auth.signUp({ email, password:pass })); if (!err) { showAlert('auth-alert','✓ Account created! You can now sign in.','success'); btn.disabled=false; btn.textContent='Create Account'; return } }
     if (err) throw err
-  } catch(e) {
-    showAlert('auth-alert', e.message, 'error')
-    btn.disabled=false; btn.textContent = S.authMode==='login' ? 'Sign In' : 'Create Account'
-  }
+  } catch(e) { showAlert('auth-alert', e.message, 'error'); btn.disabled=false; btn.textContent=S.authMode==='login'?'Sign In':'Create Account' }
 }
 async function doSignOut() { await db.auth.signOut() }
 function showAuth() { document.getElementById('auth-screen').style.display='flex'; document.getElementById('app').style.display='none' }
@@ -522,13 +535,11 @@ async function loadAll() {
     db.from('pay_schedule').select('*').order('created_at'),
     db.from('bill_payments').select('*').eq('month_year', MY),
   ])
-  S.bills     = br.data ?? []
-  S.schedules = sr.data ?? []
-  S.payments  = pr.data ?? []
+  S.bills=br.data??[]; S.schedules=sr.data??[]; S.payments=pr.data??[]
 }
-function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderCashFlow() }
+function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderCashFlow() }
 
-// ── Summary ───────────────────────────────────────
+// ── Summary cards ─────────────────────────────────
 function renderSummary() {
   const paidSet    = new Set(S.payments.map(p => p.bill_id))
   const totalBills = S.bills.reduce((s,b) => s+b.amount, 0)
@@ -536,192 +547,85 @@ function renderSummary() {
   const stillOwed  = totalBills - paidAmt
   let monthIncome  = S.schedules.reduce((sum, s) => {
     const a=Number(s.amount), f=s.frequency
-    if (f==='weekly')      return sum+a*4.33
-    if (f==='biweekly')    return sum+a*2.17
-    if (f==='semimonthly') return sum+a*2
-    if (f==='custom')      return sum+a*parseCustomDays(s.custom_days).length
+    if(f==='weekly') return sum+a*4.33; if(f==='biweekly') return sum+a*2.17
+    if(f==='semimonthly') return sum+a*2; if(f==='custom') return sum+a*parseCustomDays(s.custom_days).length
     return sum+a
   }, 0)
   const leftover = monthIncome - totalBills
-  const pct = monthIncome > 0 ? Math.min((totalBills/monthIncome)*100,100) : 0
+  const pct = monthIncome > 0 ? Math.round((totalBills/monthIncome)*100) : 0
+  const paidPct = totalBills > 0 ? Math.round((paidAmt/totalBills)*100) : 0
 
   document.getElementById('sum-grid').innerHTML = `
-    <div class="sum-card">
-      <div class="sum-label">Monthly Bills</div>
-      <div class="sum-val">$${fmt(totalBills)}</div>
-      <div class="sum-sub">${S.bills.length} bill${S.bills.length!==1?'s':''}</div>
+    <div class="dash-card dash-card-blue">
+      <div class="dash-icon">💰</div>
+      <div class="dash-label">Total Income</div>
+      <div class="dash-value c-blue">${S.schedules.length ? '$'+fmt(monthIncome) : '—'}</div>
+      <div class="dash-sub">${S.schedules.length ? S.schedules.length+' source'+(S.schedules.length>1?'s':'') : 'add a paycheck'}</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-label">Still Owed</div>
-      <div class="sum-val ${stillOwed>0?'c-amber':'c-success'}">$${fmt(stillOwed)}</div>
-      <div class="sum-sub">this month</div>
+    <div class="dash-card dash-card-accent">
+      <div class="dash-icon">📋</div>
+      <div class="dash-label">Total Bills</div>
+      <div class="dash-value c-accent">$${fmt(totalBills)}</div>
+      <div class="dash-sub">${S.bills.length} bill${S.bills.length!==1?'s':''} this month</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-label">Monthly Income</div>
-      <div class="sum-val">${S.schedules.length?'$'+fmt(monthIncome):'—'}</div>
-      <div class="sum-sub">${S.schedules.length?S.schedules.length+' source'+(S.schedules.length>1?'s':''):'add schedule'}</div>
-    </div>
-    <div class="sum-card">
-      <div class="sum-label">Left Over</div>
-      <div class="sum-val ${S.schedules.length?(leftover>=0?'c-success':'c-danger'):''}">
-        ${S.schedules.length?'$'+fmt(leftover):'—'}
+    <div class="dash-card dash-card-success">
+      <div class="dash-icon">✅</div>
+      <div class="dash-label">Remaining</div>
+      <div class="dash-value ${S.schedules.length?(leftover>=0?'c-success':'c-danger'):''}">
+        ${S.schedules.length ? '$'+fmt(leftover) : '—'}
       </div>
-      <div class="sum-sub">${S.schedules.length?'bills use '+Math.round(pct)+'% of income':''}</div>
+      <div class="dash-sub">${paidPct > 0 ? paidPct+'% of bills paid' : 'after all bills'}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-icon">📊</div>
+      <div class="dash-label">% Assigned</div>
+      <div class="dash-value ${pct>100?'c-danger':pct>80?'c-amber':'c-success'}">${S.schedules.length ? pct+'%' : '—'}</div>
+      <div class="dash-sub">of income to bills</div>
+      ${S.schedules.length ? `<div style="margin-top:8px;height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;"><div style="height:100%;border-radius:99px;background:${pct>100?'var(--danger)':pct>80?'var(--amber)':'var(--success)'};width:${Math.min(pct,100)}%;"></div></div>` : ''}
     </div>`
 }
 
-// ── Schedule list ─────────────────────────────────
-const FREQ_LABELS = { weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly', custom:'Custom' }
-
-function renderSchedList() {
-  const el = document.getElementById('sched-list')
-  if (!S.schedules.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No pay schedules yet.<br>Tap <strong>+ Add</strong> to get started.</div></div>`
-    return
-  }
-  el.innerHTML = S.schedules.map(s => {
-    const freq = FREQ_LABELS[s.frequency] || s.frequency
-    const nextDate = s.frequency==='custom'
-      ? nextCustomDate(s.custom_days)
-      : (s.next_pay_date ? new Date(s.next_pay_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—')
-    const detail = s.frequency==='custom' ? `Days: ${s.custom_days}` : `Next: ${nextDate}`
-    return `<div class="sched-item">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-        <div><div class="sched-name">${s.name}</div><div class="sched-detail">${freq} · ${detail}</div></div>
-        <div><div class="sched-amount">$${fmt(s.amount)}</div><div class="sched-amount-sub">per paycheck</div></div>
-      </div>
-      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
-        <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openSchedModal('${s.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteSchedById('${s.id}')">Delete</button>
-      </div>
-    </div>`
-  }).join('')
-}
-
-// ── Schedule modal ────────────────────────────────
-let smFreq = 'biweekly'
-function openSchedModal(editId) {
-  clearAlert('sm-alert')
-  document.getElementById('sm-id').value = editId || ''
-  document.getElementById('sched-modal-title').textContent = editId ? 'Edit Pay Schedule' : 'Add Pay Schedule'
-  document.getElementById('sm-delete-btn').classList.toggle('hidden', !editId)
-  if (editId) {
-    const s = S.schedules.find(x => x.id===editId)
-    document.getElementById('sm-name').value        = s.name
-    document.getElementById('sm-amount').value      = s.amount
-    document.getElementById('sm-date').value        = s.next_pay_date || ''
-    document.getElementById('sm-custom-days').value = s.custom_days || ''
-    smFreq = s.frequency
-  } else {
-    document.getElementById('sm-name').value = ''; document.getElementById('sm-amount').value = ''; document.getElementById('sm-custom-days').value = ''
-    smFreq = 'biweekly'
-    const d = new Date(), diff = (5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
-    document.getElementById('sm-date').value = d.toISOString().split('T')[0]
-  }
-  document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b.dataset.f===smFreq))
-  updateSmFreqUI()
-  document.getElementById('sched-overlay').classList.remove('hidden')
-  setTimeout(() => document.getElementById('sm-name').focus(), 100)
-}
-function pickSmFreq(btn) {
-  smFreq = btn.dataset.f
-  document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b => b.classList.toggle('on', b===btn))
-  updateSmFreqUI()
-}
-function updateSmFreqUI() {
-  const isCustom = smFreq==='custom'
-  document.getElementById('sm-custom-wrap').classList.toggle('hidden', !isCustom)
-  document.getElementById('sm-date-wrap').classList.toggle('hidden', isCustom)
-}
-async function saveSched() {
-  const id=document.getElementById('sm-id').value, name=document.getElementById('sm-name').value.trim()
-  const amount=parseFloat(document.getElementById('sm-amount').value), date=document.getElementById('sm-date').value
-  const customDays=document.getElementById('sm-custom-days').value.trim()
-  if (!name)             return showAlert('sm-alert','Enter a schedule name','error')
-  if (!amount||amount<=0) return showAlert('sm-alert','Enter a valid amount','error')
-  if (smFreq==='custom'&&!parseCustomDays(customDays).length) return showAlert('sm-alert','Enter at least one valid day (1–31)','error')
-  if (smFreq!=='custom'&&!date) return showAlert('sm-alert','Select your next pay date','error')
-  const payload = { name, frequency:smFreq, amount, next_pay_date:smFreq==='custom'?null:date, custom_days:smFreq==='custom'?customDays:null }
-  let err
-  if (id) ({ error:err } = await db.from('pay_schedule').update(payload).eq('id', id))
-  else    ({ error:err } = await db.from('pay_schedule').insert({ ...payload, user_id:S.user.id }))
-  if (err) return showAlert('sm-alert', err.message, 'error')
-  closeOverlay('sched-overlay')
-  const { data } = await db.from('pay_schedule').select('*').order('created_at')
-  S.schedules = data ?? []; renderAll()
-}
-async function deleteSched() { const id=document.getElementById('sm-id').value; if (id) await deleteSchedById(id, true) }
-async function deleteSchedById(id, fromModal=false) {
-  if (!confirm('Delete this pay schedule?')) return
-  await db.from('pay_schedule').delete().eq('id', id)
-  S.schedules = S.schedules.filter(s => s.id!==id)
-  if (fromModal) closeOverlay('sched-overlay')
-  renderAll()
-}
-
-// ── Paychecks ─────────────────────────────────────
+// ── Paychecks dashboard ───────────────────────────
 function setStrat(s) {
-  S.strategy = s
+  S.strategy=s
   document.getElementById('sp-proximity').classList.toggle('on', s==='proximity')
   document.getElementById('sp-even').classList.toggle('on', s==='even')
   renderPaychecks()
 }
 
 function renderPaychecks() {
-  const el = document.getElementById('pc-list')
-  const cfSection = document.getElementById('cf-section')
-  if (!S.schedules.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Add a <strong>Pay Schedule</strong> so we can assign bills to paychecks.</div></div>`
-    cfSection.style.display = 'none'; return
-  }
-  if (!S.bills.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Add bills in the <strong>Bills</strong> tab first.</div></div>`
-    cfSection.style.display = 'none'; return
-  }
-  cfSection.style.display = 'block'
+  const el=document.getElementById('pc-list')
+  const cfSection=document.getElementById('cf-section')
+  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; return }
+  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; return }
+  cfSection.style.display='block'
 
-  const allPaychecks = S.schedules.flatMap(s => genPayDates(s, 3))
-  allPaychecks.sort((a,b) => a.date-b.date)
-
-  // Sort bills by priority before assignment
-  const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0) - (PRIO_ORDER[b.priority||'essential']||0))
-
-  const groups = S.strategy==='proximity'
-    ? byDueDate(sortedBills, allPaychecks, 3)
-    : evenly(sortedBills, allPaychecks, 3)
-
-  const paidSet = new Set(S.payments.map(p => p.bill_id))
-  const todayMs = new Date().setHours(0,0,0,0)
-  let foundNext = false
+  const allPc = S.schedules.flatMap(s => genPayDates(s, 3)); allPc.sort((a,b)=>a.date-b.date)
+  const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
+  const groups = S.strategy==='proximity' ? byDueDate(sortedBills,allPc,3) : evenly(sortedBills,allPc,3)
+  const paidSet=new Set(S.payments.map(p=>p.bill_id)), todayMs=new Date().setHours(0,0,0,0)
+  let foundNext=false
 
   el.innerHTML = groups.map(g => {
-    const isPast = g.paycheck.date.getTime() < todayMs
-    const isNext = !isPast && !foundNext; if (isNext) foundNext = true
-    const over = g.remaining < 0
-    const pct  = Math.min((g.totalBills/g.paycheck.netAmount)*100, 100)
-    const sourceLabel = S.schedules.length>1 && g.paycheck.schedName ? `<span class="chip chip-job">${g.paycheck.schedName}</span>` : ''
-
-    const rows = g.bills.map(ab => {
-      const paid = paidSet.has(ab.bill.id)
-      const prioColor = PRIO_COLOR[ab.bill.priority||'essential']
+    const isPast=g.paycheck.date.getTime()<todayMs, isNext=!isPast&&!foundNext; if(isNext) foundNext=true
+    const over=g.remaining<0, pct=Math.min((g.totalBills/g.paycheck.netAmount)*100,100)
+    const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
+    const rows=g.bills.map(ab => {
+      const paid=paidSet.has(ab.bill.id), pc=PRIO_COLOR[ab.bill.priority||'essential']
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:${prioColor};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
-          <div>
-            <div class="pc-bill-name">${ab.bill.name}</div>
-            <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
-          </div>
+          <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
+          <div><div class="pc-bill-name">${ab.bill.name}</div><div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div></div>
         </div>
         <div class="pc-bill-amt">$${fmt(ab.bill.amount)}</div>
       </div>`
     }).join('')
-
     return `<div class="pc-card ${isNext?'next':''}">
       <div class="pc-header" onclick="togglePCBody(this)">
         <div>
           ${isNext?'<span class="chip chip-next">▶ Next Paycheck</span><br>':''}
           ${isPast?'<span class="chip chip-past">Past</span><br>':''}
-          <div class="pc-date">${g.paycheck.label} ${sourceLabel}</div>
+          <div class="pc-date">${g.paycheck.label} ${srcLabel}</div>
           <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due</div>
         </div>
         <div class="pc-right">
@@ -738,63 +642,40 @@ function renderPaychecks() {
         </div>
       </div>
     </div>`
-  }).join('') || `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No upcoming assignments found.</div></div>`
+  }).join('') || `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No upcoming assignments.</div></div>`
 }
 
-function togglePCBody(hdr) {
-  const body = hdr.nextElementSibling
-  body.style.display = body.style.display==='none' ? 'block' : 'none'
-}
+function togglePCBody(hdr) { const b=hdr.nextElementSibling; b.style.display=b.style.display==='none'?'block':'none' }
 
-// ── Cash Flow Timeline ────────────────────────────
-let cfOpen = false
+// ── Cash Flow ─────────────────────────────────────
+let cfOpen=false
 function toggleCF() {
-  cfOpen = !cfOpen
-  document.getElementById('cf-toggle').classList.toggle('open', cfOpen)
-  document.getElementById('cf-body').classList.toggle('hidden', !cfOpen)
+  cfOpen=!cfOpen
+  document.getElementById('cf-toggle').classList.toggle('open',cfOpen)
+  document.getElementById('cf-body').classList.toggle('hidden',!cfOpen)
+  document.getElementById('cf-chevron').style.transform=cfOpen?'rotate(180deg)':''
   if (cfOpen) renderCashFlow()
 }
-
 function renderCashFlow() {
   if (!cfOpen) return
-  const el = document.getElementById('cf-list')
-  if (!S.schedules.length || !S.bills.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0;">Add bills and a pay schedule to see your cash flow.</p>'; return }
-
-  const today = new Date(); today.setHours(0,0,0,0)
-  const end   = addM(today, 2)
-  const startBal = parseFloat(document.getElementById('cf-balance')?.value || '0') || 0
-
-  // Paychecks
-  const pcEvents = S.schedules.flatMap(s => genPayDates(s, 2))
-    .filter(p => p.date >= today)
-    .map(p => ({ date:p.date, type:'income', name:p.schedName||'Paycheck', amount:p.netAmount, cat:'Income' }))
-
-  // Bills
-  const billEvents = S.bills.flatMap(b =>
-    dueDates(b, today, end).map(d => ({ date:d, type:'bill', name:b.name, amount:-b.amount, cat:b.category, priority:b.priority||'essential' }))
-  )
-
-  const events = [...pcEvents, ...billEvents].sort((a,b) => a.date-b.date)
-  let running = startBal
-
-  if (!events.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0;">No upcoming events found.</p>'; return }
-
-  el.innerHTML = events.slice(0, 40).map(ev => {
-    running += ev.amount
-    const isIncome = ev.amount > 0
-    const parts = ev.date.toLocaleDateString('en-US',{month:'short',day:'numeric'}).split(' ')
-    const prioColor = ev.type==='bill' ? PRIO_COLOR[ev.priority] : null
-
+  const el=document.getElementById('cf-list')
+  if (!S.schedules.length||!S.bills.length) { el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:12px 0;">Add bills and a schedule to see cash flow.</p>'; return }
+  const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,2)
+  const startBal=parseFloat(document.getElementById('cf-balance')?.value||'0')||0
+  const pcEv=S.schedules.flatMap(s=>genPayDates(s,2)).filter(p=>p.date>=today).map(p=>({date:p.date,type:'income',name:p.schedName||'Paycheck',amount:p.netAmount,cat:'Income'}))
+  const bEv=S.bills.flatMap(b=>dueDates(b,today,end).map(d=>({date:d,type:'bill',name:b.name,amount:-b.amount,cat:b.category,priority:b.priority||'essential'})))
+  const evs=[...pcEv,...bEv].sort((a,b)=>a.date-b.date)
+  let running=startBal
+  if (!evs.length) { el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:12px 0;">No upcoming events.</p>'; return }
+  el.innerHTML=evs.slice(0,40).map(ev => {
+    running+=ev.amount
+    const isIncome=ev.amount>0
+    const pts=ev.date.toLocaleDateString('en-US',{month:'short',day:'numeric'}).split(' ')
+    const pc=ev.type==='bill'?PRIO_COLOR[ev.priority]:null
     return `<div class="cf-event">
-      <div class="cf-date-block">
-        <div class="cf-date-mon">${parts[0]}</div>
-        <div class="cf-date-day" style="color:${isIncome?'var(--blue)':'var(--text)'};">${parts[1].replace(',','')}</div>
-      </div>
+      <div class="cf-date-block"><div class="cf-date-mon">${pts[0]}</div><div class="cf-date-day" style="color:${isIncome?'var(--blue)':'var(--text)'};">${pts[1].replace(',','')}</div></div>
       <div style="flex:1;min-width:0;">
-        <div class="cf-event-name" style="display:flex;align-items:center;gap:6px;">
-          ${prioColor?`<span style="width:8px;height:8px;border-radius:50%;background:${prioColor};flex-shrink:0;display:inline-block;"></span>`:''}
-          ${ev.name}
-        </div>
+        <div class="cf-event-name" style="display:flex;align-items:center;gap:6px;">${pc?`<span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;display:inline-block;"></span>`:''}${ev.name}</div>
         <div class="cf-event-sub">${ev.cat}</div>
       </div>
       <div class="cf-event-right">
@@ -807,50 +688,22 @@ function renderCashFlow() {
 
 // ── Bills ─────────────────────────────────────────
 function renderBills() {
-  const el      = document.getElementById('bills-list')
-  const paidSet = new Set(S.payments.map(p => p.bill_id))
-
-  if (!S.bills.length) {
-    el.innerHTML = `<div class="empty">
-      <div class="empty-icon">📋</div>
-      <div class="empty-text">No bills yet.<br>Add your first bill or try a template.</div>
-      <button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openTemplates()">Browse Templates</button>
-    </div>`
-    return
-  }
-
-  // Sort by priority then due_day
-  const sorted = [...S.bills].sort((a,b) => {
-    const po = (PRIO_ORDER[a.priority||'essential']||0) - (PRIO_ORDER[b.priority||'essential']||0)
-    if (po !== 0) return po
-    return (a.due_day||99) - (b.due_day||99)
-  })
-
-  el.innerHTML = sorted.map(b => {
-    const paid = paidSet.has(b.id)
-    const prioColor = PRIO_COLOR[b.priority||'essential']
-    const prioLabel = PRIO_LABEL[b.priority||'essential']
+  const el=document.getElementById('bills-list'), paidSet=new Set(S.payments.map(p=>p.bill_id))
+  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No bills yet. Add your first bill or browse templates.</div><button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openTemplates()">Browse Templates</button></div>`; return }
+  const sorted=[...S.bills].sort((a,b) => { const po=(PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0); return po!==0?po:(a.due_day||99)-(b.due_day||99) })
+  el.innerHTML=sorted.map(b => {
+    const paid=paidSet.has(b.id), pc=PRIO_COLOR[b.priority||'essential'], pl=PRIO_LABEL[b.priority||'essential']
     return `<div class="bill-row ${paid?'paid':''}">
-      <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">
-        ${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}
-      </button>
+      <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
       <div class="bill-info">
-        <div class="bill-name">
-          <span class="prio-dot" style="background:${prioColor};"></span>
-          ${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}
-          ${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}
-        </div>
-        <div class="bill-meta">${billMeta(b)} · <span style="color:${prioColor};font-weight:600;">${prioLabel}</span></div>
+        <div class="bill-name"><span class="prio-dot" style="background:${pc};"></span>${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}</div>
+        <div class="bill-meta">${billMeta(b)} · <span style="color:${pc};font-weight:600;">${pl}</span></div>
       </div>
       <div class="bill-right">
         <div class="bill-amt">$${fmt(b.amount)}</div>
         <div class="bill-btns">
-          <button class="iBtn" onclick="openBillModal('${b.id}')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          </button>
-          <button class="iBtn del" onclick="delBill('${b.id}')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
+          <button class="iBtn" onclick="openBillModal('${b.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+          <button class="iBtn del" onclick="delBill('${b.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
         </div>
       </div>
     </div>`
@@ -858,123 +711,209 @@ function renderBills() {
 }
 
 async function togglePaid(id, wasPaid) {
-  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id', id).eq('month_year', MY)
+  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',MY)
   else         await db.from('bill_payments').insert({ user_id:S.user.id, bill_id:id, month_year:MY })
-  const { data } = await db.from('bill_payments').select('*').eq('month_year', MY)
-  S.payments = data ?? []; renderBills(); renderSummary(); renderPaychecks()
+  const { data } = await db.from('bill_payments').select('*').eq('month_year',MY)
+  S.payments=data??[]; renderBills(); renderSummary(); renderPaychecks(); renderReports()
 }
 
 // ── Bill modal ────────────────────────────────────
-let mBillType = 'recurring', mPriority = 'essential'
-
+let mBillType='recurring', mPriority='essential'
 function setBillType(t) {
-  mBillType = t
-  document.getElementById('m-type-recurring').classList.toggle('on', t==='recurring')
-  document.getElementById('m-type-single').classList.toggle('on', t==='single')
-  document.getElementById('m-due-wrap').classList.toggle('hidden', t==='single')
-  document.getElementById('m-date-wrap').classList.toggle('hidden', t==='recurring')
+  mBillType=t
+  document.getElementById('m-type-recurring').classList.toggle('on',t==='recurring')
+  document.getElementById('m-type-single').classList.toggle('on',t==='single')
+  document.getElementById('m-due-wrap').classList.toggle('hidden',t==='single')
+  document.getElementById('m-date-wrap').classList.toggle('hidden',t==='recurring')
 }
-
 function setPriority(btn) {
-  mPriority = btn.dataset.p
-  document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('on'))
+  mPriority=btn.dataset.p
+  document.querySelectorAll('.prio-btn').forEach(b=>b.classList.remove('on'))
   btn.classList.add('on')
 }
-
 function openBillModal(editId, prefill) {
   clearAlert('m-alert')
-  document.getElementById('m-id').value = editId || ''
-  document.getElementById('bill-modal-title').textContent = editId ? 'Edit Bill' : 'Add Bill'
+  document.getElementById('m-id').value=editId||''
+  document.getElementById('bill-modal-title').textContent=editId?'Edit Bill':'Add Bill'
   if (editId) {
-    const b = S.bills.find(x => x.id===editId)
-    document.getElementById('m-name').value     = b.name
-    document.getElementById('m-amount').value   = b.amount
-    document.getElementById('m-due').value      = b.due_day || ''
-    document.getElementById('m-due-date').value = b.due_date || ''
-    document.getElementById('m-cat').value      = b.category
-    mPriority = b.priority || 'essential'
-    setBillType(b.bill_type || 'recurring')
+    const b=S.bills.find(x=>x.id===editId)
+    document.getElementById('m-name').value=b.name; document.getElementById('m-amount').value=b.amount
+    document.getElementById('m-due').value=b.due_day||''; document.getElementById('m-due-date').value=b.due_date||''
+    document.getElementById('m-cat').value=b.category; mPriority=b.priority||'essential'; setBillType(b.bill_type||'recurring')
   } else if (prefill) {
-    document.getElementById('m-name').value     = prefill.name
-    document.getElementById('m-amount').value   = prefill.amount
-    document.getElementById('m-due').value      = prefill.due_day || ''
-    document.getElementById('m-due-date').value = ''
-    document.getElementById('m-cat').value      = prefill.category
-    mPriority = prefill.priority || 'essential'
-    setBillType('recurring')
+    document.getElementById('m-name').value=prefill.name; document.getElementById('m-amount').value=prefill.amount
+    document.getElementById('m-due').value=prefill.due_day||''; document.getElementById('m-due-date').value=''
+    document.getElementById('m-cat').value=prefill.category; mPriority=prefill.priority||'essential'; setBillType('recurring')
   } else {
-    document.getElementById('m-name').value = ''; document.getElementById('m-amount').value = ''
-    document.getElementById('m-due').value = ''; document.getElementById('m-due-date').value = ''
-    document.getElementById('m-cat').value = 'Other'; mPriority = 'essential'
-    setBillType('recurring')
+    document.getElementById('m-name').value=''; document.getElementById('m-amount').value=''
+    document.getElementById('m-due').value=''; document.getElementById('m-due-date').value=''
+    document.getElementById('m-cat').value='Other'; mPriority='essential'; setBillType('recurring')
   }
-  // Set priority buttons
-  document.querySelectorAll('.prio-btn').forEach(b => { b.classList.remove('on'); if (b.dataset.p===mPriority) b.classList.add('on') })
+  document.querySelectorAll('.prio-btn').forEach(b=>{ b.classList.remove('on'); if(b.dataset.p===mPriority) b.classList.add('on') })
   document.getElementById('bill-overlay').classList.remove('hidden')
-  setTimeout(() => document.getElementById('m-name').focus(), 100)
+  setTimeout(()=>document.getElementById('m-name').focus(),100)
 }
-
 async function saveBill() {
   const id=document.getElementById('m-id').value, name=document.getElementById('m-name').value.trim()
   const amount=parseFloat(document.getElementById('m-amount').value), cat=document.getElementById('m-cat').value
-  if (!name)                  return showAlert('m-alert','Enter a bill name','error')
-  if (!amount||amount<=0)     return showAlert('m-alert','Enter a valid amount','error')
-  let payload = { name, amount, category:cat, bill_type:mBillType, priority:mPriority }
-  if (mBillType==='recurring') {
-    const due = parseInt(document.getElementById('m-due').value)
-    if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error')
-    payload.due_day=due; payload.due_date=null
-  } else {
-    const dueDate = document.getElementById('m-due-date').value
-    if (!dueDate) return showAlert('m-alert','Select a due date','error')
-    payload.due_date=dueDate; payload.due_day=null
-  }
+  if (!name) return showAlert('m-alert','Enter a bill name','error')
+  if (!amount||amount<=0) return showAlert('m-alert','Enter a valid amount','error')
+  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority }
+  if (mBillType==='recurring') { const due=parseInt(document.getElementById('m-due').value); if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error'); payload.due_day=due; payload.due_date=null }
+  else { const dueDate=document.getElementById('m-due-date').value; if (!dueDate) return showAlert('m-alert','Select a due date','error'); payload.due_date=dueDate; payload.due_day=null }
   let err
-  if (id) ({ error:err } = await db.from('bills').update(payload).eq('id', id))
-  else    ({ error:err } = await db.from('bills').insert({ ...payload, user_id:S.user.id, is_active:true }))
-  if (err) return showAlert('m-alert', err.message, 'error')
+  if (id) ({ error:err }=await db.from('bills').update(payload).eq('id',id))
+  else    ({ error:err }=await db.from('bills').insert({...payload,user_id:S.user.id,is_active:true}))
+  if (err) return showAlert('m-alert',err.message,'error')
   closeOverlay('bill-overlay')
-  const { data } = await db.from('bills').select('*').eq('is_active', true).order('due_day')
-  S.bills = data ?? []; renderAll()
+  const { data }=await db.from('bills').select('*').eq('is_active',true).order('due_day'); S.bills=data??[]; renderAll()
 }
-
 async function delBill(id) {
   if (!confirm('Delete this bill?')) return
-  await db.from('bills').update({ is_active:false }).eq('id', id)
-  S.bills = S.bills.filter(b => b.id!==id); renderAll()
+  await db.from('bills').update({is_active:false}).eq('id',id)
+  S.bills=S.bills.filter(b=>b.id!==id); renderAll()
+}
+
+// ── Schedule list + modal ─────────────────────────
+const FREQ_LABELS={ weekly:'Weekly', biweekly:'Bi-weekly', semimonthly:'Semi-monthly', monthly:'Monthly', custom:'Custom' }
+function renderSchedList() {
+  const el=document.getElementById('sched-list')
+  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No pay schedules yet.<br>Tap <strong>+ Add</strong> to get started.</div></div>`; return }
+  el.innerHTML=S.schedules.map(s => {
+    const freq=FREQ_LABELS[s.frequency]||s.frequency
+    const nextDate=s.frequency==='custom'?nextCustomDate(s.custom_days):(s.next_pay_date?new Date(s.next_pay_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—')
+    const detail=s.frequency==='custom'?`Days: ${s.custom_days}`:`Next: ${nextDate}`
+    return `<div class="sched-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div><div class="sched-name">${s.name}</div><div class="sched-detail">${freq} · ${detail}</div></div>
+        <div><div class="sched-amount">$${fmt(s.amount)}</div><div style="font-size:11px;color:var(--muted);text-align:right;">per paycheck</div></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openSchedModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteSchedById('${s.id}')">Delete</button>
+      </div>
+    </div>`
+  }).join('')
+}
+let smFreq='biweekly'
+function openSchedModal(editId) {
+  clearAlert('sm-alert'); document.getElementById('sm-id').value=editId||''
+  document.getElementById('sched-modal-title').textContent=editId?'Edit Pay Schedule':'Add Pay Schedule'
+  document.getElementById('sm-delete-btn').classList.toggle('hidden',!editId)
+  if (editId) { const s=S.schedules.find(x=>x.id===editId); document.getElementById('sm-name').value=s.name; document.getElementById('sm-amount').value=s.amount; document.getElementById('sm-date').value=s.next_pay_date||''; document.getElementById('sm-custom-days').value=s.custom_days||''; smFreq=s.frequency }
+  else { document.getElementById('sm-name').value=''; document.getElementById('sm-amount').value=''; document.getElementById('sm-custom-days').value=''; smFreq='biweekly'; const d=new Date(),diff=(5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff); document.getElementById('sm-date').value=d.toISOString().split('T')[0] }
+  document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b=>b.classList.toggle('on',b.dataset.f===smFreq))
+  updateSmFreqUI(); document.getElementById('sched-overlay').classList.remove('hidden')
+  setTimeout(()=>document.getElementById('sm-name').focus(),100)
+}
+function pickSmFreq(btn) { smFreq=btn.dataset.f; document.querySelectorAll('#sm-freq-grid .freq-btn').forEach(b=>b.classList.toggle('on',b===btn)); updateSmFreqUI() }
+function updateSmFreqUI() { const c=smFreq==='custom'; document.getElementById('sm-custom-wrap').classList.toggle('hidden',!c); document.getElementById('sm-date-wrap').classList.toggle('hidden',c) }
+async function saveSched() {
+  const id=document.getElementById('sm-id').value, name=document.getElementById('sm-name').value.trim()
+  const amount=parseFloat(document.getElementById('sm-amount').value), date=document.getElementById('sm-date').value
+  const customDays=document.getElementById('sm-custom-days').value.trim()
+  if (!name) return showAlert('sm-alert','Enter a schedule name','error')
+  if (!amount||amount<=0) return showAlert('sm-alert','Enter a valid amount','error')
+  if (smFreq==='custom'&&!parseCustomDays(customDays).length) return showAlert('sm-alert','Enter at least one valid day (1–31)','error')
+  if (smFreq!=='custom'&&!date) return showAlert('sm-alert','Select your next pay date','error')
+  const payload={ name, frequency:smFreq, amount, next_pay_date:smFreq==='custom'?null:date, custom_days:smFreq==='custom'?customDays:null }
+  let err
+  if (id) ({ error:err }=await db.from('pay_schedule').update(payload).eq('id',id))
+  else    ({ error:err }=await db.from('pay_schedule').insert({...payload,user_id:S.user.id}))
+  if (err) return showAlert('sm-alert',err.message,'error')
+  closeOverlay('sched-overlay')
+  const { data }=await db.from('pay_schedule').select('*').order('created_at'); S.schedules=data??[]; renderAll()
+}
+async function deleteSched() { const id=document.getElementById('sm-id').value; if(id) await deleteSchedById(id,true) }
+async function deleteSchedById(id, fromModal=false) {
+  if (!confirm('Delete this pay schedule?')) return
+  await db.from('pay_schedule').delete().eq('id',id); S.schedules=S.schedules.filter(s=>s.id!==id)
+  if(fromModal) closeOverlay('sched-overlay'); renderAll()
+}
+
+// ── Reports ───────────────────────────────────────
+function renderReports() {
+  const el=document.getElementById('reports-content')
+  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Add bills to see reports.</div></div>`; return }
+
+  const paidSet=new Set(S.payments.map(p=>p.bill_id))
+  const totalBills=S.bills.reduce((s,b)=>s+b.amount,0)
+  const paidAmt=S.bills.filter(b=>paidSet.has(b.id)).reduce((s,b)=>s+b.amount,0)
+  const unpaidAmt=totalBills-paidAmt
+
+  // By category
+  const byCat={}
+  S.bills.forEach(b => { byCat[b.category]=(byCat[b.category]||0)+b.amount })
+  const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1])
+  const maxCat=catEntries[0]?.[1]||1
+
+  // By priority
+  const byPrio={ essential:0, important:0, optional:0 }
+  S.bills.forEach(b => { byPrio[b.priority||'essential']+=b.amount })
+
+  const monthName=NOW.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+
+  el.innerHTML = `
+    <div class="report-card">
+      <div class="report-title">${monthName} Summary</div>
+      <div class="stat-row"><span class="stat-label">Total bills</span><span class="stat-val">$${fmt(totalBills)}</span></div>
+      <div class="stat-row"><span class="stat-label">Paid so far</span><span class="stat-val c-success">$${fmt(paidAmt)}</span></div>
+      <div class="stat-row"><span class="stat-label">Still owed</span><span class="stat-val c-amber">$${fmt(unpaidAmt)}</span></div>
+      <div class="stat-row"><span class="stat-label">Bills paid</span><span class="stat-val">${S.payments.length} of ${S.bills.filter(b=>b.bill_type!=='single'||true).length}</span></div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-title">Spending by Category</div>
+      ${catEntries.map(([cat, amt]) => `
+        <div class="cat-row">
+          <div class="cat-name">${cat}</div>
+          <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${Math.round((amt/maxCat)*100)}%;"></div></div>
+          <div class="cat-amt">$${fmt(amt)}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="report-card">
+      <div class="report-title">By Priority</div>
+      <div class="cat-row">
+        <div class="cat-name" style="color:#c8102e;">Essential</div>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.essential/totalBills)*100):0}%;background:#c8102e;"></div></div>
+        <div class="cat-amt">$${fmt(byPrio.essential)}</div>
+      </div>
+      <div class="cat-row">
+        <div class="cat-name" style="color:#d97706;">Important</div>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.important/totalBills)*100):0}%;background:#d97706;"></div></div>
+        <div class="cat-amt">$${fmt(byPrio.important)}</div>
+      </div>
+      <div class="cat-row">
+        <div class="cat-name" style="color:#1d4ed8;">Optional</div>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${totalBills?Math.round((byPrio.optional/totalBills)*100):0}%;background:#1d4ed8;"></div></div>
+        <div class="cat-amt">$${fmt(byPrio.optional)}</div>
+      </div>
+    </div>`
 }
 
 // ── Templates ─────────────────────────────────────
 function openTemplates() {
-  const el = document.getElementById('tpl-content')
-  el.innerHTML = Object.entries(TEMPLATES).map(([cat, items]) => `
+  const el=document.getElementById('tpl-content')
+  el.innerHTML=Object.entries(TEMPLATES).map(([cat,items])=>`
     <div class="tpl-section">
       <div class="tpl-section-title">${cat}</div>
-      <div class="tpl-grid">
-        ${items.map(t => `
-          <button class="tpl-btn" onclick="useTpl(${JSON.stringify(t).replace(/"/g,'&quot;')})">
-            <div class="tpl-name">
-              <span class="tpl-dot" style="background:${PRIO_COLOR[t.priority]};"></span>${t.name}
-            </div>
-            <div class="tpl-meta">~$${t.amount} · due ${ordinal(t.due_day)}</div>
-          </button>
-        `).join('')}
+      <div class="tpl-grid">${items.map(t=>`
+        <button class="tpl-btn" onclick="useTpl(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+          <div class="tpl-name"><span class="tpl-dot" style="background:${PRIO_COLOR[t.priority]};"></span>${t.name}</div>
+          <div class="tpl-meta">~$${t.amount} · due ${ordinal(t.due_day)}</div>
+        </button>`).join('')}
       </div>
-    </div>
-  `).join('')
+    </div>`).join('')
   document.getElementById('tpl-overlay').classList.remove('hidden')
 }
-
-function useTpl(tpl) {
-  closeOverlay('tpl-overlay')
-  openBillModal(null, tpl)
-}
+function useTpl(tpl) { closeOverlay('tpl-overlay'); openBillModal(null,tpl) }
 
 // ── Sample data ───────────────────────────────────
 async function loadSampleData() {
   if (!confirm('Load sample bills and a pay schedule? You can delete them anytime.')) return
-  const uid = S.user.id
-  const sampleBills = [
+  const uid=S.user.id
+  const sampleBills=[
     { user_id:uid, name:'Rent / Mortgage', amount:1200, due_day:1,  category:'Housing',       bill_type:'recurring', priority:'essential', is_active:true },
     { user_id:uid, name:'Electric',        amount:120,  due_day:15, category:'Utilities',     bill_type:'recurring', priority:'essential', is_active:true },
     { user_id:uid, name:'Internet',        amount:80,   due_day:18, category:'Utilities',     bill_type:'recurring', priority:'important', is_active:true },
@@ -984,29 +923,24 @@ async function loadSampleData() {
     { user_id:uid, name:'Groceries',       amount:400,  due_day:1,  category:'Food',          bill_type:'recurring', priority:'essential', is_active:true },
     { user_id:uid, name:'Cell Phone',      amount:80,   due_day:10, category:'Utilities',     bill_type:'recurring', priority:'important', is_active:true },
   ]
-  const d = new Date(), diff = (5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
-  const sampleSched = { user_id:uid, name:'Main Job', frequency:'biweekly', amount:2100, next_pay_date:d.toISOString().split('T')[0], custom_days:null }
-  await Promise.all([
-    db.from('bills').insert(sampleBills),
-    db.from('pay_schedule').insert(sampleSched),
-  ])
+  const d=new Date(),diff=(5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
+  await Promise.all([db.from('bills').insert(sampleBills), db.from('pay_schedule').insert({ user_id:uid, name:'Main Job', frequency:'biweekly', amount:2100, next_pay_date:d.toISOString().split('T')[0], custom_days:null })])
   await loadAll(); renderAll()
 }
 
 // ── Pages ─────────────────────────────────────────
-const PAGE_TITLES = { dashboard:'Dollar Guide', bills:'My Bills', schedule:'Pay Schedules' }
 function goPage(p) {
-  document.querySelectorAll('.page').forEach(x => x.classList.remove('on'))
-  document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('on'))
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'))
+  document.querySelectorAll('.tab-item').forEach(x=>x.classList.remove('on'))
   document.getElementById(`pg-${p}`).classList.add('on')
   document.getElementById(`nb-${p}`).classList.add('on')
-  document.getElementById('hdr-title').textContent = PAGE_TITLES[p]
-  document.getElementById('hdr-slogan').style.display = p==='dashboard' ? 'block' : 'none'
+  document.getElementById('hdr-slogan').style.display=p==='dashboard'?'block':'none'
+  if (p==='reports') renderReports()
+  if (p==='settings') document.getElementById('settings-email').textContent=S.user?.email||'—'
 }
 
-// ── Overlay helpers ───────────────────────────────
 function closeOverlay(id) { document.getElementById(id).classList.add('hidden') }
-function overlayClick(e, id) { if (e.target===document.getElementById(id)) closeOverlay(id) }
+function overlayClick(e,id) { if(e.target===document.getElementById(id)) closeOverlay(id) }
 
 // ── Assignment engine ─────────────────────────────
 function addD(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
@@ -1015,18 +949,16 @@ function dStr(d){ return d.toISOString().split('T')[0] }
 function parseD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
 function fmtD(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }
 function parseCustomDays(str){ if(!str) return []; return str.split(',').map(s=>parseInt(s.trim())).filter(n=>n>=1&&n<=31) }
-function nextCustomDate(str){ const days=parseCustomDays(str).sort((a,b)=>a-b); if(!days.length) return '—'; const today=new Date(),d=today.getDate(),m=today.getMonth(),y=today.getFullYear(); for(const day of days){ if(day>=d) return new Date(y,m,day).toLocaleDateString('en-US',{month:'short',day:'numeric'}) } return new Date(y,m+1,days[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }
-
+function nextCustomDate(str){ const days=parseCustomDays(str).sort((a,b)=>a-b); if(!days.length) return '—'; const t=new Date(),d=t.getDate(),m=t.getMonth(),y=t.getFullYear(); for(const day of days){ if(day>=d) return new Date(y,m,day).toLocaleDateString('en-US',{month:'short',day:'numeric'}) } return new Date(y,m+1,days[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }
 function fwdStep(d,f){ if(f==='weekly') return addD(d,7); if(f==='biweekly') return addD(d,14); if(f==='monthly') return addM(d,1); return d.getDate()<15?new Date(d.getFullYear(),d.getMonth(),15):new Date(d.getFullYear(),d.getMonth()+1,1) }
 function bakStep(d,f){ if(f==='weekly') return addD(d,-7); if(f==='biweekly') return addD(d,-14); if(f==='monthly') return addM(d,-1); return d.getDate()>=15?new Date(d.getFullYear(),d.getMonth(),1):new Date(d.getFullYear(),d.getMonth()-1,15) }
 
-function genPayDates(sched, mo) {
-  const today=new Date(); today.setHours(0,0,0,0)
-  const end=addM(today,mo), look=addD(today,-30), out=[]
-  if (sched.frequency==='custom') {
+function genPayDates(sched,mo){
+  const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,mo),look=addD(today,-30),out=[]
+  if(sched.frequency==='custom'){
     const days=parseCustomDays(sched.custom_days).sort((a,b)=>a-b); if(!days.length) return out
     let y=look.getFullYear(),m=look.getMonth()
-    while(new Date(y,m,1)<=end){ for(const day of days){ const last=new Date(y,m+1,0).getDate(),pd=new Date(y,Math.min(day,last)>0?m:m,Math.min(day,last)); const pd2=new Date(y,m,Math.min(day,last)); if(pd2>=look&&pd2<=end) out.push({date:pd2,dateStr:dStr(pd2),label:fmtD(pd2),netAmount:Number(sched.amount),schedName:sched.name}) }; m++; if(m>11){m=0;y++} }
+    while(new Date(y,m,1)<=end){ for(const day of days){ const last=new Date(y,m+1,0).getDate(),pd=new Date(y,m,Math.min(day,last)); if(pd>=look&&pd<=end) out.push({date:pd,dateStr:dStr(pd),label:fmtD(pd),netAmount:Number(sched.amount),schedName:sched.name}) }; m++; if(m>11){m=0;y++} }
     return out
   }
   let cur=parseD(sched.next_pay_date)
@@ -1054,8 +986,7 @@ function evenly(bills,paychecks,mo){
   const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,mo)
   const map=new Map(); paychecks.forEach(p=>map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
   const sorted=[...paychecks].sort((a,b)=>a.date-b.date)
-  const all=[]; for(const bill of bills) for(const dd of dueDates(bill,today,end)) all.push({bill,dueDate:dd})
-  all.sort((a,b)=>a.dueDate-b.dueDate)
+  const all=[]; for(const bill of bills) for(const dd of dueDates(bill,today,end)) all.push({bill,dueDate:dd}); all.sort((a,b)=>a.dueDate-b.dueDate)
   for(const {bill,dueDate} of all){ const elig=sorted.filter(p=>p.date<=dueDate); const cands=elig.length?elig:[sorted.find(p=>p.date>dueDate)].filter(Boolean); if(!cands.length) continue; const chosen=cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b); const g=map.get(chosen.dateStr); g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining=g.paycheck.netAmount-g.totalBills }
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
