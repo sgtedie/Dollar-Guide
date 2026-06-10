@@ -867,32 +867,45 @@ function renderPaychecks() {
   if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; return }
   cfSection.style.display='block'; if(navEl) navEl.style.display='flex'
 
-  // Generate 6 months so navigation has data to pull from
-  const allPc = S.schedules.flatMap(s => genPayDates(s, 6)); allPc.sort((a,b)=>a.date-b.date)
-  const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
-  let allGroups
-  if (S.strategy==='proximity') allGroups = byDueDate(sortedBills,allPc,6)
-  else if (S.strategy==='even') allGroups = evenly(sortedBills,allPc,6)
-  else allGroups = smartAssign(sortedBills,allPc,6)
-  allGroups = applyOverrides(allGroups, allPc)
-
   // Reference month based on navigation offset
   const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
   const refY=refDate.getFullYear(), refM=refDate.getMonth()
-  const prevY=refM===0?refY-1:refY, prevM=refM===0?11:refM-1
-  const nextY=refM===11?refY+1:refY, nextM=refM===11?0:refM+1
+
+  // Generate paychecks only for the ref month + 1 month buffer each side
+  const allPc = S.schedules.flatMap(s => genPayDates(s, pcPage + 4)); allPc.sort((a,b)=>a.date-b.date)
+
+  // Generate bill occurrences only for the ref month
+  const refStart = new Date(refY, refM, 1)
+  const refEnd   = new Date(refY, refM + 1, 0) // last day of ref month
+
+  const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
+
+  // Run assignment scoped to just the ref month's bills
+  const refPc = allPc.filter(p => {
+    const pm = p.date.getMonth(), py = p.date.getFullYear()
+    // Include paychecks from ref month + stragglers from prev month that cover ref month bills
+    return (py === refY && pm === refM) ||
+           (py === (refM===0?refY-1:refY) && pm === (refM===0?11:refM-1))
+  })
+
+  let allGroups
+  if (S.strategy==='proximity') allGroups = byDueDate(sortedBills, allPc, pcPage + 4)
+  else if (S.strategy==='even') allGroups = evenly(sortedBills, allPc, pcPage + 4)
+  else allGroups = smartAssign(sortedBills, allPc, pcPage + 4)
+  allGroups = applyOverrides(allGroups, allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
-  const prevGroups = allGroups.filter(g=>inM(g,prevY,prevM))
-  const curGroups  = allGroups.filter(g=>inM(g,refY,refM))
-  const nextGroups = allGroups.filter(g=>inM(g,nextY,nextM))
 
-  // Window: last paycheck of prev month + all this month + first of next month
-  const window = [
-    ...(prevGroups.length ? [prevGroups[prevGroups.length-1]] : []),
-    ...curGroups,
-    ...(nextGroups.length ? [nextGroups[0]] : []),
-  ]
+  // Show ONLY current month's paychecks, and only bills DUE in the ref month
+  const window = allGroups
+    .filter(g => inM(g, refY, refM))
+    .map(g => {
+      const monthBills = g.bills.filter(ab =>
+        ab.dueDate.getFullYear() === refY && ab.dueDate.getMonth() === refM
+      )
+      const total = monthBills.reduce((s, ab) => s + ab.bill.amount, 0)
+      return { ...g, bills: monthBills, totalBills: total, remaining: g.paycheck.netAmount - total }
+    })
 
   // Update month navigator label
   if(navEl) document.getElementById('pc-nav-label').textContent =
@@ -908,7 +921,7 @@ function renderPaychecks() {
   el.innerHTML = window.map(g => {
     const isPast=g.paycheck.date.getTime()<todayMs
     const isNext=!isPast&&!foundNext; if(isNext) foundNext=true
-    const isContext=!inM(g,refY,refM)   // prev/next month context paycheck
+    const isContext=false
     const over=g.remaining<0, pct=Math.min((g.totalBills/g.paycheck.netAmount)*100,100)
     const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
 
