@@ -929,9 +929,10 @@ function renderPaychecks() {
   applyOverrides(allGroups, allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
-  // Show all paychecks that have bills — no month filter, so late-June paychecks
-  // covering July-1 bills show up correctly in the July view
-  const window = allGroups
+  // Only show current month's paychecks. Bills due early next month that step back
+  // to this month's last paycheck (e.g. Auto Insurance Jul 8 → Jun 25) appear here
+  // so the user knows to set that money aside. Jul view won't show Jun 25.
+  const window = allGroups.filter(g => inM(g, refY, refM))
 
   // Update month navigator label
   if(navEl) document.getElementById('pc-nav-label').textContent =
@@ -1435,8 +1436,8 @@ function updateIncomePreview() {
 // Each bill appears exactly once. Paycheck can be previous month (for bills due on the 1st).
 function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const refStart = new Date(refYear, refMonth, 1)
-  // Bills scope: current month only. Each paycheck shows in its own month view.
-  const refEnd   = new Date(refYear, refMonth + 1, 0) // last day of ref month
+  // Extend into next month so late-month paychecks can absorb early-next-month bills
+  const refEnd   = new Date(refYear, refMonth + 1, 14)
 
   // One occurrence per bill for the ref month
   const occurrences = []
@@ -1478,14 +1479,15 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
         // No paycheck before due date — use first one after
         chosen = sorted.find(p => p.date > dueDate) ?? null
       } else {
-        const natural   = sorted[naturalIdx]
-        const natRemain = map.get(natural.dateStr).remaining
+        const natural    = sorted[naturalIdx]
+        const natRemain  = map.get(natural.dateStr).remaining
         if (natRemain >= bill.amount) {
           // Natural paycheck can cover it ✓
           chosen = natural
         } else if (naturalIdx > 0) {
-          // Natural is tight — try the ONE paycheck before it
-          const prev      = sorted[naturalIdx - 1]
+          // Natural is tight — try ONE paycheck back, BUT only if it's in the same month
+          const prev = sorted[naturalIdx - 1]
+          const sameMonth = prev.date.getMonth()===refMonth && prev.date.getFullYear()===refYear
           const prevRemain = map.get(prev.dateStr).remaining
           chosen = prevRemain >= bill.amount ? prev : natural
         } else {
