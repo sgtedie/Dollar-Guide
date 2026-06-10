@@ -494,6 +494,11 @@
           <button class="btn btn-danger btn-sm" onclick="doSignOut()">Sign Out</button>
         </div>
       </div>
+      <div class="report-card" id="sharing-card">
+        <div class="report-title">Shared Account</div>
+        <div id="sharing-content"></div>
+      </div>
+
       <div class="report-card">
         <div class="report-title">Bill Reminders</div>
         <div id="reminder-alert" class="hidden" style="margin-bottom:12px;"></div>
@@ -783,7 +788,7 @@ const TEMPLATES = {
   Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-const S = { user:null, bills:[], schedules:[], payments:[], overrides:[], buckets:[], strategy:'smart', authMode:'login' }
+const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], buckets:[], strategy:'smart', authMode:'login' }
 let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
 
 function shiftPcMonth(dir) { pcPage += dir; renderPaychecks() }
@@ -799,7 +804,15 @@ async function boot() {
     else if (!sess?.user) { S.user = null; showAuth() }
   })
 }
-async function enter() { showApp(); await loadAll(); renderAll() }
+async function enter() {
+  showApp()
+  // Silent check: am I a secondary user linked to someone else's account?
+  const { data: link } = await db.from('linked_accounts')
+    .select('primary_user_id').eq('secondary_user_id', S.user.id).maybeSingle()
+  S.isSecondary    = !!link
+  S.effectiveUserId = link ? link.primary_user_id : S.user.id
+  await loadAll(); renderAll()
+}
 
 // ── Auth ──────────────────────────────────────────
 function setMode(m) {
@@ -1400,7 +1413,7 @@ function goPage(p) {
   document.getElementById('hdr-slogan').style.display=p==='dashboard'?'block':'none'
   if (p==='reports') renderReports()
   if (p==='buckets') renderBuckets()
-  if (p==='settings') { document.getElementById('settings-email').textContent=S.user?.email||'—'; loadReminderSettings() }
+  if (p==='settings') { document.getElementById('settings-email').textContent=S.user?.email||'—'; loadReminderSettings(); renderSharingUI() }
 }
 
 function closeOverlay(id) { document.getElementById(id).classList.add('hidden') }
@@ -1719,6 +1732,114 @@ function evenly(bills,paychecks,mo){
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
 
+// ── Sharing / secondary login ─────────────────────
+function renderSharingUI() {
+  const el = document.getElementById('sharing-content')
+  if (!el) return
+
+  if (S.isSecondary) {
+    // Secondary user — show who they're linked to + leave option
+    el.innerHTML = `
+      <div class="setting-row">
+        <div><div class="setting-label" style="color:var(--success);">✓ Linked to shared account</div>
+        <div class="setting-sub">You're viewing someone else's budget</div></div>
+      </div>
+      <div class="setting-row" style="border-bottom:none;">
+        <div><div class="setting-label">Leave Shared Account</div><div class="setting-sub">Return to your own budget</div></div>
+        <button class="btn btn-danger btn-sm" onclick="leaveSharedAccount()">Leave</button>
+      </div>`
+    return
+  }
+
+  // Primary user — show invite code generator + join form
+  el.innerHTML = `
+    <div class="setting-row">
+      <div><div class="setting-label">Invite a Partner</div><div class="setting-sub">Generate a code to share with your partner</div></div>
+      <button class="btn btn-gray btn-sm" id="gen-code-btn" onclick="generateInviteCode()">Get Code</button>
+    </div>
+    <div id="invite-code-display" class="hidden" style="padding:12px 0;">
+      <div style="background:var(--navy);border-radius:10px;padding:16px;text-align:center;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Share this code</div>
+        <div id="invite-code-text" style="font-size:32px;font-weight:800;color:var(--accent);letter-spacing:6px;"></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;">Expires in 7 days · One-time use</div>
+      </div>
+      <button class="btn btn-gray" style="margin-top:10px;font-size:13px;" onclick="copyInviteCode()">📋 Copy Code</button>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Join a shared account</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Got a code from your partner? Enter it below.</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="join-code-input" placeholder="e.g. ABC123" maxlength="6" style="text-transform:uppercase;font-size:16px;letter-spacing:3px;font-weight:700;flex:1;padding:11px 14px;">
+        <button class="btn btn-accent btn-sm" style="flex-shrink:0;" onclick="joinSharedAccount()">Join</button>
+      </div>
+      <div id="join-alert" class="hidden" style="margin-top:10px;"></div>
+    </div>`
+}
+
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const code  = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('')
+
+  db.from('pending_links')
+    .insert({ invite_code: code, primary_user_id: S.effectiveUserId })
+    .then(({ error }) => {
+      if (error) { alert('Could not generate code: ' + error.message); return }
+      document.getElementById('invite-code-text').textContent = code
+      document.getElementById('invite-code-display').classList.remove('hidden')
+      document.getElementById('gen-code-btn').textContent = 'New Code'
+    })
+}
+
+function copyInviteCode() {
+  const code = document.getElementById('invite-code-text')?.textContent
+  if (code) {
+    navigator.clipboard.writeText(code).then(() => alert('Code copied!'))
+  }
+}
+
+async function joinSharedAccount() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase()
+  if (code.length !== 6) return showAlert('join-alert', 'Enter the full 6-character code', 'error')
+
+  // Look up the invite code
+  const { data: pending, error: lookupErr } = await db
+    .from('pending_links')
+    .select('*')
+    .eq('invite_code', code)
+    .maybeSingle()
+
+  if (lookupErr || !pending) return showAlert('join-alert', 'Code not found or expired. Ask your partner for a new one.', 'error')
+  if (pending.primary_user_id === S.user.id) return showAlert('join-alert', "That's your own code!", 'error')
+  if (new Date(pending.expires_at) < new Date()) return showAlert('join-alert', 'This code has expired. Ask your partner for a new one.', 'error')
+
+  // Create the link
+  const { error: linkErr } = await db.from('linked_accounts').insert({
+    primary_user_id:   pending.primary_user_id,
+    secondary_user_id: S.user.id,
+  })
+  if (linkErr) return showAlert('join-alert', 'Could not join: ' + linkErr.message, 'error')
+
+  // Delete the used invite code
+  await db.from('pending_links').delete().eq('id', pending.id)
+
+  // Update state and reload data
+  S.isSecondary     = true
+  S.effectiveUserId = pending.primary_user_id
+  showAlert('join-alert', '✓ Joined! Loading shared budget…', 'success')
+
+  setTimeout(async () => {
+    await loadAll(); renderAll(); renderSharingUI()
+  }, 1200)
+}
+
+async function leaveSharedAccount() {
+  if (!confirm('Leave shared account? You will return to your own budget.')) return
+  await db.from('linked_accounts').delete().eq('secondary_user_id', S.user.id)
+  S.isSecondary     = false
+  S.effectiveUserId = S.user.id
+  await loadAll(); renderAll(); renderSharingUI()
+}
+
 // ── Reminder settings ─────────────────────────────
 let reminderSetting = null
 
@@ -1759,7 +1880,7 @@ async function sendTestEmail() {
 
   try {
     const { data, error } = await db.functions.invoke('super-handler', {
-      body: { test: true, user_id: S.user.id }
+      body: { test: true, user_id: S.effectiveUserId }
     })
     if (error) showAlert('reminder-alert', 'Failed: ' + error.message, 'error')
     else if (data?.success) showAlert('reminder-alert', '✓ Test email sent! Check your inbox.', 'success')
@@ -1781,7 +1902,7 @@ async function saveReminderSettings() {
   if (reminderSetting) {
     ({ error: err } = await db.from('reminder_settings').update(payload).eq('id', reminderSetting.id))
   } else {
-    ({ error: err } = await db.from('reminder_settings').insert({ ...payload, user_id: S.user.id }))
+    ({ error: err } = await db.from('reminder_settings').insert({ ...payload, user_id: S.effectiveUserId }))
     if (!err) {
       const { data } = await db.from('reminder_settings').select('*').maybeSingle()
       reminderSetting = data
