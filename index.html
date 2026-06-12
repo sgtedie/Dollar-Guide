@@ -183,6 +183,7 @@
     .chip-paid{background:var(--success-bg);color:var(--success);font-size:10px;padding:2px 7px;margin-left:6px}
     .chip-job{background:var(--surface2);color:var(--muted);font-size:10px;padding:2px 7px;margin-left:6px}
     .chip-single{background:var(--blue-bg);color:var(--blue);font-size:10px;padding:2px 7px;margin-left:6px}
+    .chip-adjusted{background:var(--amber-bg);color:var(--accent-dark);font-size:10px;padding:2px 7px;margin-left:6px}
 
     /* ── Priority ── */
     .prio-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
@@ -956,6 +957,25 @@
   </div>
 </div>
 
+<!-- ══ AMOUNT OVERRIDE MODAL ══ -->
+<div class="overlay hidden" id="amt-overlay" onclick="overlayClick(event,'amt-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Adjust Amount</div>
+    <p id="amt-bill-name" style="font-weight:700;font-size:16px;margin-bottom:2px;"></p>
+    <p id="amt-month-label" style="color:var(--muted);font-size:13px;margin-bottom:18px;"></p>
+    <input type="hidden" id="amt-bill-id">
+    <input type="hidden" id="amt-month-year">
+    <div class="fg">
+      <label>Amount for this month only</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="amt-value" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    </div>
+    <button class="btn btn-accent" style="margin-top:10px;" onclick="saveAmountOverride()">Save</button>
+    <button class="btn btn-gray" style="margin-top:8px;" onclick="resetAmountOverride()">Reset to Usual Amount</button>
+    <button class="btn btn-gray" style="margin-top:8px;" onclick="closeOverlay('amt-overlay')">Cancel</button>
+  </div>
+</div>
+
 <!-- ══ TEMPLATES MODAL ══ -->
 <div class="overlay hidden" id="tpl-overlay" onclick="overlayClick(event,'tpl-overlay')">
   <div class="modal">
@@ -989,7 +1009,7 @@ const TEMPLATES = {
   Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], buckets:[], categories:[], expenses:[], debts:[], strategy:'smart', authMode:'login' }
+const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], amountOverrides:[], buckets:[], categories:[], expenses:[], debts:[], strategy:'smart', authMode:'login' }
 let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
 let spPage = 0   // month offset for Spending tab
 
@@ -998,6 +1018,19 @@ function shiftSpMonth(dir) { spPage += dir; renderSpending() }
 const NOW = new Date()
 const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
 function paidSetFor(my) { return new Set(S.payments.filter(p=>p.month_year===my).map(p=>p.bill_id)) }
+
+// ── Per-month amount overrides ─────────────────────
+// "month_year" key for any Date, matching the MY/month_year format used
+// throughout (e.g. "2026-07"). Lets a recurring bill cost a different
+// amount in ONE specific month without touching past/future months.
+function ymKey(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` }
+function billAmount(bill, monthYear) {
+  const o = S.amountOverrides.find(x=>x.bill_id===bill.id && x.month_year===monthYear)
+  return o ? Number(o.amount) : Number(bill.amount)
+}
+function hasAmountOverride(billId, monthYear) {
+  return S.amountOverrides.some(o=>o.bill_id===billId && o.month_year===monthYear)
+}
 
 // ── Boot ──────────────────────────────────────────
 async function boot() {
@@ -1044,7 +1077,7 @@ function showApp()  { document.getElementById('auth-screen').style.display='none
 
 // ── Load ──────────────────────────────────────────
 async function loadAll() {
-  const [br, sr, pr, or_, bk, cr, er, dr] = await Promise.all([
+  const [br, sr, pr, or_, bk, cr, er, dr, amr] = await Promise.all([
     db.from('bills').select('*').eq('is_active', true).order('due_day'),
     db.from('pay_schedule').select('*').order('created_at'),
     db.from('bill_payments').select('*'),
@@ -1053,19 +1086,20 @@ async function loadAll() {
     db.from('spending_categories').select('*').order('created_at'),
     db.from('expenses').select('*').order('expense_date', { ascending: false }),
     db.from('debts').select('*').order('created_at'),
+    db.from('bill_amount_overrides').select('*'),
   ])
   S.bills=br.data??[]; S.schedules=sr.data??[]; S.payments=pr.data??[]
   S.overrides=or_.data??[]; S.buckets=bk.data??[]
   S.categories=cr.data??[]; S.expenses=er.data??[]
-  S.debts=dr.data??[]
+  S.debts=dr.data??[]; S.amountOverrides=amr.data??[]
 }
 function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow(); renderSpending(); renderDebts() }
 
 // ── Summary cards ─────────────────────────────────
 function renderSummary() {
   const paidSet    = paidSetFor(MY)
-  const totalBills = S.bills.reduce((s,b) => s+b.amount, 0)
-  const paidAmt    = S.bills.filter(b => paidSet.has(b.id)).reduce((s,b) => s+b.amount, 0)
+  const totalBills = S.bills.reduce((s,b) => s+billAmount(b,MY), 0)
+  const paidAmt    = S.bills.filter(b => paidSet.has(b.id)).reduce((s,b) => s+billAmount(b,MY), 0)
   const stillOwed  = totalBills - paidAmt
   let monthIncome  = S.schedules.reduce((sum, s) => {
     const a=Number(s.amount), f=s.frequency
@@ -1166,17 +1200,20 @@ function renderPaychecks() {
     const rows=g.bills.map(ab => {
       const paid=paidSet.has(ab.bill.id), pc=PRIO_COLOR[ab.bill.priority||'essential']
       const isOverridden=S.overrides.some(o=>o.bill_id===ab.bill.id)
+      const abMY=ymKey(ab.dueDate)
+      const isAdjusted=hasAmountOverride(ab.bill.id,abMY)
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
           <button class="check-circle ${paid?'on':''}" style="width:22px;height:22px;margin-top:1px;" onclick="togglePaid('${ab.bill.id}',${paid},'${refMY}')" title="Mark as paid">${paid?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
           <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
           <div>
-            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}</div>
+            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}${isAdjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}</div>
             <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <div class="pc-bill-amt">$${fmt(ab.bill.amount)}</div>
+          <div class="pc-bill-amt">$${fmt(ab.amount)}</div>
+          <button class="reassign-btn" onclick="openAmountOverride('${ab.bill.id}','${abMY}')" title="Use a different amount this month">✎</button>
           <button class="reassign-btn" onclick="openReassign('${ab.bill.id}','${ab.bill.name}','${g.paycheck.dateStr}')" title="Move to different paycheck">↔</button>
         </div>
       </div>`
@@ -1233,7 +1270,7 @@ function renderCashFlow() {
   const today=new Date(); today.setHours(0,0,0,0); const end=addM(today,2)
   const startBal=parseFloat(document.getElementById('cf-balance')?.value||'0')||0
   const pcEv=S.schedules.flatMap(s=>genPayDates(s,2)).filter(p=>p.date>=today).map(p=>({date:p.date,type:'income',name:p.schedName||'Paycheck',amount:p.netAmount,cat:'Income'}))
-  const bEv=S.bills.flatMap(b=>dueDates(b,today,end).map(d=>({date:d,type:'bill',name:b.name,amount:-b.amount,cat:b.category,priority:b.priority||'essential'})))
+  const bEv=S.bills.flatMap(b=>dueDates(b,today,end).map(d=>({date:d,type:'bill',name:b.name,amount:-billAmount(b,ymKey(d)),cat:b.category,priority:b.priority||'essential'})))
   const evs=[...pcEv,...bEv].sort((a,b)=>a.date-b.date)
   let running=startBal
   if (!evs.length) { el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:12px 0;">No upcoming events.</p>'; return }
@@ -1263,14 +1300,15 @@ function renderBills() {
   const sorted=[...S.bills].sort((a,b) => { const po=(PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0); return po!==0?po:(a.due_day||99)-(b.due_day||99) })
   el.innerHTML=sorted.map(b => {
     const paid=paidSet.has(b.id), pc=PRIO_COLOR[b.priority||'essential'], pl=PRIO_LABEL[b.priority||'essential']
+    const amt=billAmount(b,MY), adjusted=hasAmountOverride(b.id,MY)
     return `<div class="bill-row ${paid?'paid':''}">
       <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
       <div class="bill-info">
-        <div class="bill-name"><span class="prio-dot" style="background:${pc};"></span>${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}</div>
+        <div class="bill-name"><span class="prio-dot" style="background:${pc};"></span>${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}${adjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}</div>
         <div class="bill-meta">${billMeta(b)} · <span style="color:${pc};font-weight:600;">${pl}</span></div>
       </div>
       <div class="bill-right">
-        <div class="bill-amt">$${fmt(b.amount)}</div>
+        <div class="bill-amt">$${fmt(amt)}</div>
         <div class="bill-btns">
           <button class="iBtn" onclick="openBillModal('${b.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
           <button class="iBtn del" onclick="delBill('${b.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
@@ -1425,8 +1463,8 @@ function renderReports() {
   if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Add bills to see reports.</div></div>`; return }
 
   const paidSet=paidSetFor(MY)
-  const totalBills=S.bills.reduce((s,b)=>s+b.amount,0)
-  const paidAmt=S.bills.filter(b=>paidSet.has(b.id)).reduce((s,b)=>s+b.amount,0)
+  const totalBills=S.bills.reduce((s,b)=>s+billAmount(b,MY),0)
+  const paidAmt=S.bills.filter(b=>paidSet.has(b.id)).reduce((s,b)=>s+billAmount(b,MY),0)
   const unpaidAmt=totalBills-paidAmt
   const totalBuckets=S.buckets.reduce((s,b)=>s+Number(b.monthly_contribution),0)
   let monthIncome=S.schedules.reduce((sum,s)=>{ const a=Number(s.amount),f=s.frequency; if(f==='weekly') return sum+a*4.33; if(f==='biweekly') return sum+a*2.17; if(f==='semimonthly') return sum+a*2; if(f==='custom') return sum+a*parseCustomDays(s.custom_days).length; return sum+a },0)
@@ -1434,13 +1472,13 @@ function renderReports() {
 
   // By category
   const byCat={}
-  S.bills.forEach(b => { byCat[b.category]=(byCat[b.category]||0)+b.amount })
+  S.bills.forEach(b => { byCat[b.category]=(byCat[b.category]||0)+billAmount(b,MY) })
   const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1])
   const maxCat=catEntries[0]?.[1]||1
 
   // By priority
   const byPrio={ essential:0, important:0, optional:0 }
-  S.bills.forEach(b => { byPrio[b.priority||'essential']+=b.amount })
+  S.bills.forEach(b => { byPrio[b.priority||'essential']+=billAmount(b,MY) })
 
   const monthName=NOW.toLocaleDateString('en-US',{month:'long',year:'numeric'})
 
@@ -1529,7 +1567,7 @@ function buildAnnualCalendar(today) {
   irregular.forEach(b => {
     dueDates(b, today, yearEnd).forEach(d => {
       const mo = months.find(x=>x.y===d.getFullYear() && x.m===d.getMonth())
-      if (mo) mo.bills.push({ name:b.name, amount:Number(b.amount), category:b.category })
+      if (mo) mo.bills.push({ name:b.name, amount:billAmount(b,ymKey(d)), category:b.category })
     })
   })
 
@@ -1718,7 +1756,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const occurrences = []
   for (const bill of bills) {
     for (const dd of dueDates(bill, refStart, refEnd)) {
-      occurrences.push({ bill, dueDate: dd })
+      occurrences.push({ bill, dueDate: dd, amount: billAmount(bill, ymKey(dd)) })
     }
   }
 
@@ -1732,7 +1770,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   const sorted = [...paychecks].sort((a,b)=>a.date-b.date)
   paychecks.forEach(p => map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
 
-  for (const {bill,dueDate} of occurrences) {
+  for (const {bill,dueDate,amount} of occurrences) {
     let chosen = null
     if (strategy==='even') {
       // Pick paycheck with most remaining balance on or before due date
@@ -1756,7 +1794,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
       } else {
         const natural    = sorted[naturalIdx]
         const natRemain  = map.get(natural.dateStr).remaining
-        if (natRemain >= bill.amount) {
+        if (natRemain >= amount) {
           // Natural paycheck can cover it ✓
           chosen = natural
         } else if (naturalIdx > 0) {
@@ -1764,7 +1802,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
           const prev = sorted[naturalIdx - 1]
           const sameMonth = prev.date.getMonth()===refMonth && prev.date.getFullYear()===refYear
           const prevRemain = map.get(prev.dateStr).remaining
-          chosen = prevRemain >= bill.amount ? prev : natural
+          chosen = prevRemain >= amount ? prev : natural
         } else {
           // No previous paycheck — accept over-budget on natural
           chosen = natural
@@ -1777,7 +1815,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
     }
     if (!chosen) continue
     const g = map.get(chosen.dateStr)
-    g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining-=bill.amount
+    g.bills.push({bill,dueDate,amount}); g.totalBills+=amount; g.remaining-=amount
   }
 
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0)
@@ -1794,22 +1832,22 @@ function smartAssign(bills, paychecks, mo) {
   const all=[]
   for(const bill of bills) {
     for(const dd of dueDates(bill,today,end)) {
-      all.push({ bill, dueDate:dd, prioOrder:PRIO_ORDER[bill.priority||'essential']||0 })
+      all.push({ bill, dueDate:dd, amount:billAmount(bill,ymKey(dd)), prioOrder:PRIO_ORDER[bill.priority||'essential']||0 })
     }
   }
   all.sort((a,b)=> a.prioOrder!==b.prioOrder ? a.prioOrder-b.prioOrder : a.dueDate-b.dueDate)
 
-  for(const {bill,dueDate} of all) {
+  for(const {bill,dueDate,amount} of all) {
     // Eligible paychecks: on or before due date
     const elig = sorted.filter(p=>p.date<=dueDate)
     const pool = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
     if (!pool.length) continue
     // Pick the one with enough balance; if tie or none enough, pick most remaining
-    const canCover = pool.filter(p=>map.get(p.dateStr).remaining >= bill.amount)
+    const canCover = pool.filter(p=>map.get(p.dateStr).remaining >= amount)
     const chosen = (canCover.length ? canCover : pool)
       .reduce((best,p) => map.get(p.dateStr).remaining > map.get(best.dateStr).remaining ? p : best)
     const g=map.get(chosen.dateStr)
-    g.bills.push({bill,dueDate}); g.totalBills+=bill.amount; g.remaining-=bill.amount
+    g.bills.push({bill,dueDate,amount}); g.totalBills+=amount; g.remaining-=amount
   }
   return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0||g.paycheck.date>=today)
 }
@@ -1831,10 +1869,12 @@ function applyOverrides(groups, allPc) {
     const bill = S.bills.find(b=>b.id===billId)
     if (!bill) continue
     // Remove from current group
+    let moved = null
     for(const g of newGroups) {
       const idx = g.bills.findIndex(ab=>ab.bill.id===billId)
       if (idx !== -1) {
-        g.bills.splice(idx,1); g.totalBills-=bill.amount; g.remaining+=bill.amount
+        moved = g.bills[idx]
+        g.bills.splice(idx,1); g.totalBills-=moved.amount; g.remaining+=moved.amount
         break
       }
     }
@@ -1842,8 +1882,9 @@ function applyOverrides(groups, allPc) {
     const target = newGroups.find(g=>g.paycheck.dateStr===targetDate)
     if (target) {
       const today=new Date(); today.setHours(0,0,0,0)
-      const dueDate = dueDates(bill,today,addM(today,3))[0] || target.paycheck.date
-      target.bills.push({bill,dueDate}); target.totalBills+=bill.amount; target.remaining-=bill.amount
+      const dueDate = moved ? moved.dueDate : (dueDates(bill,today,addM(today,3))[0] || target.paycheck.date)
+      const amount = moved ? moved.amount : billAmount(bill, ymKey(dueDate))
+      target.bills.push({bill,dueDate,amount}); target.totalBills+=amount; target.remaining-=amount
     }
   }
   return newGroups
@@ -1882,6 +1923,44 @@ async function clearReassign() {
   await db.from('bill_assignments').delete().eq('bill_id',billId).eq('month_year',MY)
   const { data } = await db.from('bill_assignments').select('*').eq('month_year',MY)
   S.overrides = data??[]; renderPaychecks()
+}
+
+// ── Per-month amount override ─────────────────────
+function openAmountOverride(billId, monthYear) {
+  const bill = S.bills.find(b=>b.id===billId)
+  if (!bill) return
+  document.getElementById('amt-bill-id').value = billId
+  document.getElementById('amt-month-year').value = monthYear
+  document.getElementById('amt-bill-name').textContent = bill.name
+  const [y,m] = monthYear.split('-')
+  const label = new Date(Number(y), Number(m)-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'})
+  document.getElementById('amt-month-label').textContent = `Usual amount ${fmt(bill.amount)} · ${label} only`
+  document.getElementById('amt-value').value = billAmount(bill, monthYear)
+  document.getElementById('amt-overlay').classList.remove('hidden')
+}
+
+async function saveAmountOverride() {
+  const billId = document.getElementById('amt-bill-id').value
+  const monthYear = document.getElementById('amt-month-year').value
+  const amount = parseFloat(document.getElementById('amt-value').value)
+  if (isNaN(amount) || amount < 0) { alert('Enter a valid amount.'); return }
+  closeOverlay('amt-overlay')
+  const { error } = await db.from('bill_amount_overrides').upsert(
+    { user_id:S.effectiveUserId, bill_id:billId, month_year:monthYear, amount },
+    { onConflict:'user_id,bill_id,month_year' }
+  )
+  if (error) { alert('Could not save: '+error.message); return }
+  const { data } = await db.from('bill_amount_overrides').select('*')
+  S.amountOverrides = data??[]; renderAll()
+}
+
+async function resetAmountOverride() {
+  const billId = document.getElementById('amt-bill-id').value
+  const monthYear = document.getElementById('amt-month-year').value
+  closeOverlay('amt-overlay')
+  await db.from('bill_amount_overrides').delete().eq('bill_id',billId).eq('month_year',monthYear)
+  const { data } = await db.from('bill_amount_overrides').select('*')
+  S.amountOverrides = data??[]; renderAll()
 }
 
 // ── Buckets ───────────────────────────────────────
