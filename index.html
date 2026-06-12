@@ -1955,50 +1955,41 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
     return po!==0 ? po : a.dueDate-b.dueDate
   })
 
-  const map    = new Map()
   const sorted = [...paychecks].sort((a,b)=>a.date-b.date)
-  paychecks.forEach(p => map.set(p.dateStr,{paycheck:p,bills:[],totalBills:0,remaining:p.netAmount}))
+
+  // Category allowances are money "set aside" from a paycheck before bills
+  // are even considered, so a paycheck's TRUE spare room is its net amount
+  // minus whatever allowances land on it. Compute each paycheck's 1-based
+  // "Nth paycheck of the month" position (same convention as
+  // category_allowances.paycheck_index) so placement/rebalancing can see
+  // that room — g.remaining itself stays "netAmount minus bills only" so
+  // the render code's separate allowance subtraction isn't double-counted.
+  const map = new Map()
+  const byMonth = new Map()
+  for (const p of sorted) {
+    const my = ymKey(p.date)
+    if (!byMonth.has(my)) byMonth.set(my, [])
+    byMonth.get(my).push(p)
+  }
+  for (const [my, pcs] of byMonth) {
+    pcs.forEach((p,idx) => {
+      const allowance = S.categories.reduce((s,cat)=>s+categoryAllowance(cat.id, idx+1, my), 0)
+      map.set(p.dateStr, {paycheck:p, bills:[], totalBills:0, allowance, remaining:p.netAmount})
+    })
+  }
+  const trueRemain = g => g.remaining - g.allowance
 
   for (const {bill,dueDate,amount} of occurrences) {
     let chosen = null
     if (strategy==='even') {
-      // Pick paycheck with most remaining balance on or before due date
+      // Pick paycheck with most true remaining balance on or before due date
       const elig  = sorted.filter(p=>p.date<=dueDate)
       const cands = elig.length ? elig : [sorted.find(p=>p.date>dueDate)].filter(Boolean)
-      if (cands.length) chosen = cands.reduce((b,p)=>map.get(p.dateStr).remaining>map.get(b.dateStr).remaining?p:b)
-    } else if (strategy==='smart') {
-      // Smart rules:
-      // 1. Assign to the NATURAL paycheck = closest on or before due date
-      // 2. If natural is over budget → step back ONE paycheck and use it if it has room
-      // 3. If still no room → accept over-budget on the natural paycheck
-      // Bills are priority-sorted so essentials always claim their spot first.
-      let naturalIdx = -1
-      for (let i = 0; i < sorted.length; i++) {
-        if (sorted[i].date.getTime() <= dueDate.getTime()) naturalIdx = i
-        else break
-      }
-      if (naturalIdx === -1) {
-        // No paycheck before due date — use first one after
-        chosen = sorted.find(p => p.date > dueDate) ?? null
-      } else {
-        const natural    = sorted[naturalIdx]
-        const natRemain  = map.get(natural.dateStr).remaining
-        if (natRemain >= amount) {
-          // Natural paycheck can cover it ✓
-          chosen = natural
-        } else if (naturalIdx > 0) {
-          // Natural is tight — try ONE paycheck back, BUT only if it's in the same month
-          const prev = sorted[naturalIdx - 1]
-          const sameMonth = prev.date.getMonth()===refMonth && prev.date.getFullYear()===refYear
-          const prevRemain = map.get(prev.dateStr).remaining
-          chosen = prevRemain >= amount ? prev : natural
-        } else {
-          // No previous paycheck — accept over-budget on natural
-          chosen = natural
-        }
-      }
+      if (cands.length) chosen = cands.reduce((b,p)=>trueRemain(map.get(p.dateStr))>trueRemain(map.get(b.dateStr))?p:b)
     } else {
-      // proximity: last paycheck on or before due date (same day counts)
+      // 'smart' and 'proximity' both start with natural placement: the
+      // closest paycheck on or before the due date. 'smart' rebalances
+      // afterwards (below); 'proximity' leaves this as the final answer.
       for (const p of sorted) { if(p.date.getTime()<=dueDate.getTime()) chosen=p; else break }
       if (!chosen) chosen = sorted.find(p=>p.date>dueDate)??null
     }
@@ -2007,7 +1998,43 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
     g.bills.push({bill,dueDate,amount}); g.totalBills+=amount; g.remaining-=amount
   }
 
-  return sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0)
+  // ── Smart rebalance ──────────────────────────────
+  // Natural placement can leave a paycheck over budget (bills + allowances
+  // > paycheck) even when an EARLIER paycheck has spare room. Move bills
+  // off an over-budget paycheck onto an earlier one — paying a little
+  // ahead of the due date, never late — largest and lowest-priority bills
+  // first, until the paycheck is balanced or nothing left can be moved.
+  if (strategy==='smart') {
+    for (let i=0; i<sorted.length; i++) {
+      const g = map.get(sorted[i].dateStr)
+      while (trueRemain(g) < 0) {
+        const movable = [...g.bills].sort((a,b) => {
+          const po = (PRIO_ORDER[b.bill.priority||'essential']||0)-(PRIO_ORDER[a.bill.priority||'essential']||0)
+          return po!==0 ? po : b.amount-a.amount
+        })
+        let moved = false
+        for (const ab of movable) {
+          for (let j=i-1; j>=0; j--) {
+            const tg = map.get(sorted[j].dateStr)
+            if (trueRemain(tg) >= ab.amount) {
+              g.bills.splice(g.bills.indexOf(ab),1); g.totalBills-=ab.amount; g.remaining+=ab.amount
+              tg.bills.push(ab); tg.totalBills+=ab.amount; tg.remaining-=ab.amount
+              moved = true
+              break
+            }
+          }
+          if (moved) break
+        }
+        if (!moved) break
+      }
+    }
+  }
+
+  const result = sorted.map(p=>map.get(p.dateStr)).filter(g=>g.bills.length>0)
+  // Always show bills within a paycheck in due-date order, regardless of
+  // the order they were placed/rebalanced in.
+  result.forEach(g => g.bills.sort((a,b)=>a.dueDate-b.dueDate))
+  return result
 }
 
 // ── Smart assign ─────────────────────────────────
@@ -2100,6 +2127,7 @@ function applyOverrides(groups, allPc, refMY, monthPcs) {
       target.bills.push({bill,dueDate,amount}); target.totalBills+=amount; target.remaining-=amount
     }
   }
+  newGroups.forEach(g => g.bills.sort((a,b)=>a.dueDate-b.dueDate))
   newGroups.sort((a,b)=>a.paycheck.date-b.paycheck.date)
   return newGroups
 }
