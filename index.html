@@ -2608,6 +2608,22 @@ function billMeta(b){
 function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
 function clearAlert(id){ const el=document.getElementById(id); el.classList.add('hidden'); el.textContent='' }
 
+// ── Tab strip horizontal scroll on desktop ─────────
+// Touchscreens can swipe the tab strip natively, but a desktop mouse wheel
+// only scrolls vertically. Translate vertical wheel input into horizontal
+// scroll so all tabs stay reachable on desktop too.
+function initTabScroll() {
+  const strip = document.querySelector('.tab-strip')
+  if (!strip) return
+  strip.addEventListener('wheel', (e) => {
+    if (strip.scrollWidth <= strip.clientWidth) return
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+    e.preventDefault()
+    strip.scrollLeft += e.deltaY
+  }, { passive: false })
+}
+initTabScroll()
+
 boot()
 </script>
 </body>
