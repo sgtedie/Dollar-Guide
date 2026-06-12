@@ -1048,7 +1048,7 @@ const TEMPLATES = {
   Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], amountOverrides:[], buckets:[], categories:[], expenses:[], debts:[], categoryAllowances:[], categoryAllowanceOverrides:[], strategy:'smart', authMode:'login' }
+const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], recurringAssignments:[], amountOverrides:[], buckets:[], categories:[], expenses:[], debts:[], categoryAllowances:[], categoryAllowanceOverrides:[], strategy:'smart', authMode:'login' }
 let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
 let spPage = 0   // month offset for Spending tab
 
@@ -1140,7 +1140,7 @@ function showApp()  { document.getElementById('auth-screen').style.display='none
 
 // ── Load ──────────────────────────────────────────
 async function loadAll() {
-  const [br, sr, pr, or_, bk, cr, er, dr, amr, car, caor] = await Promise.all([
+  const [br, sr, pr, or_, bk, cr, er, dr, amr, car, caor, ra] = await Promise.all([
     db.from('bills').select('*').eq('is_active', true).order('due_day'),
     db.from('pay_schedule').select('*').order('created_at'),
     db.from('bill_payments').select('*'),
@@ -1152,12 +1152,14 @@ async function loadAll() {
     db.from('bill_amount_overrides').select('*'),
     db.from('category_allowances').select('*'),
     db.from('category_allowance_overrides').select('*'),
+    db.from('bill_recurring_assignments').select('*'),
   ])
   S.bills=br.data??[]; S.schedules=sr.data??[]; S.payments=pr.data??[]
   S.overrides=or_.data??[]; S.buckets=bk.data??[]
   S.categories=cr.data??[]; S.expenses=er.data??[]
   S.debts=dr.data??[]; S.amountOverrides=amr.data??[]
   S.categoryAllowances=car.data??[]; S.categoryAllowanceOverrides=caor.data??[]
+  S.recurringAssignments=ra.data??[]
   await accrueDebtInterest()
 }
 function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow(); renderSpending(); renderDebts() }
@@ -1226,22 +1228,29 @@ function renderPaychecks() {
   if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; if(resetBanner) resetBanner.classList.add('hidden'); return }
   if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; if(resetBanner) resetBanner.classList.add('hidden'); return }
   cfSection.style.display='block'; if(navEl) navEl.style.display='flex'
-  // "Reset All" banner — only shown when at least one bill has been
-  // manually moved to a different paycheck this month.
-  if(resetBanner) resetBanner.classList.toggle('hidden', !S.overrides.length)
 
   // Reference month based on navigation offset
   const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
   const refY=refDate.getFullYear(), refM=refDate.getMonth()
   const refMY=`${refY}-${String(refM+1).padStart(2,'0')}`
 
+  // "Reset All" banner — shown when a bill has been manually moved
+  // (recurring, applies every month) or moved just for this one month.
+  if(resetBanner) resetBanner.classList.toggle('hidden', !S.recurringAssignments.length && !S.overrides.some(o=>o.month_year===refMY))
+
   // Generate paychecks across a wide window so prev-month paychecks are available
   const allPc = S.schedules.flatMap(s => genPayDates(s, pcPage + 4)); allPc.sort((a,b)=>a.date-b.date)
   const sortedBills = [...S.bills].sort((a,b) => (PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
 
+  // All paychecks for this month, in date order — index+1 is each
+  // paycheck's 1-based "Nth paycheck of the month" position. Used to
+  // look up category allowances AND recurring bill reassignments
+  // ("always put this bill on the Nth paycheck of the month, every month").
+  const monthPcs = getMonthPaychecks(refY, refM, pcPage+4)
+
   // Assign only REF-MONTH bill occurrences to paychecks
   // This means each bill appears exactly once, assigned to whatever paycheck covers it
-  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc)
+  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc, refMY, monthPcs)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
   // Only show current month's paychecks. Bills due early next month that step back
@@ -1249,13 +1258,9 @@ function renderPaychecks() {
   // so the user knows to set that money aside. Jul view won't show Jun 25.
   let window = allGroups.filter(g => inM(g, refY, refM))
 
-  // All paychecks for this month, in date order — index+1 is each
-  // paycheck's 1-based "Nth paycheck of the month" position, used to
-  // look up category allowances. assignForMonth() drops paychecks with
-  // no bills, so add a placeholder card for any paycheck that has a
-  // category allowance but no bills, otherwise that allowance would
-  // never be shown.
-  const monthPcs = getMonthPaychecks(refY, refM, pcPage+4)
+  // assignForMonth() drops paychecks with no bills, so add a placeholder
+  // card for any paycheck that has a category allowance but no bills,
+  // otherwise that allowance would never be shown.
   monthPcs.forEach((p,i) => {
     const pi = i+1
     if (!window.some(g=>g.paycheck.dateStr===p.dateStr) && S.categories.some(cat=>categoryAllowance(cat.id, pi, refMY) > 0)) {
@@ -1313,7 +1318,7 @@ function renderPaychecks() {
 
     const rows=g.bills.map(ab => {
       const paid=paidSet.has(ab.bill.id), pc=PRIO_COLOR[ab.bill.priority||'essential']
-      const isOverridden=S.overrides.some(o=>o.bill_id===ab.bill.id)
+      const isOverridden=S.recurringAssignments.some(r=>r.bill_id===ab.bill.id) || S.overrides.some(o=>o.bill_id===ab.bill.id && o.month_year===refMY)
       const abMY=ymKey(ab.dueDate)
       const isAdjusted=hasAmountOverride(ab.bill.id,abMY)
       const linkedDebt = ab.bill.link_debt_id ? S.debts.find(d=>d.id===ab.bill.link_debt_id) : null
@@ -2037,9 +2042,23 @@ function smartAssign(bills, paychecks, mo) {
 }
 
 // ── Apply manual overrides ────────────────────────
-function applyOverrides(groups, allPc) {
-  if (!S.overrides.length) return groups
-  const overrideMap = new Map(S.overrides.map(o=>[o.bill_id, o.paycheck_date]))
+// Two layers of "move bill" overrides, combined into one map:
+//  1. Recurring (bill_recurring_assignments) — "always put this bill on
+//     the Nth paycheck of the month" (paycheck_index), applied to every
+//     month via monthPcs for whichever month is being viewed.
+//  2. One-time (bill_assignments) — applies only to its specific
+//     month_year and, if present, overrides the recurring default for
+//     that one month only.
+function applyOverrides(groups, allPc, refMY, monthPcs) {
+  const overrideMap = new Map()
+  for (const ra of S.recurringAssignments) {
+    const pc = monthPcs[ra.paycheck_index - 1]
+    if (pc) overrideMap.set(ra.bill_id, pc.dateStr)
+  }
+  for (const o of S.overrides) {
+    if (o.month_year === refMY) overrideMap.set(o.bill_id, o.paycheck_date)
+  }
+  if (!overrideMap.size) return groups
 
   // Deep clone groups
   const newGroups = groups.map(g=>({
@@ -2101,31 +2120,56 @@ function openReassign(billId, billName, currentDate) {
   document.getElementById('reassign-overlay').classList.remove('hidden')
 }
 
+// Moving a bill sets it to recur on that same "Nth paycheck of the month"
+// every month going forward (until reset). We figure out N from the
+// paycheck the user picked, then save it as the bill's recurring default.
 async function saveReassign(billId, paycheckDate) {
   closeOverlay('reassign-overlay')
-  const { error } = await db.from('bill_assignments').upsert(
-    { user_id:S.user.id, bill_id:billId, paycheck_date:paycheckDate, month_year:MY },
-    { onConflict:'user_id,bill_id,month_year' }
+  const [py,pm] = paycheckDate.split('-').map(Number)
+  const monthPcs = getMonthPaychecks(py, pm-1)
+  const paycheckIndex = monthPcs.findIndex(p=>p.dateStr===paycheckDate) + 1
+  if (!paycheckIndex) { alert('Could not save: paycheck not found'); return }
+  const { error } = await db.from('bill_recurring_assignments').upsert(
+    { user_id:S.effectiveUserId, bill_id:billId, paycheck_index:paycheckIndex },
+    { onConflict:'bill_id' }
   )
   if (error) { alert('Could not save: '+error.message); return }
-  const { data } = await db.from('bill_assignments').select('*').eq('month_year',MY)
-  S.overrides = data??[]; renderPaychecks()
+  // A new recurring default supersedes any one-time "this month only" override.
+  await db.from('bill_assignments').delete().eq('bill_id',billId)
+  const [{ data:raData }, { data:orData }] = await Promise.all([
+    db.from('bill_recurring_assignments').select('*'),
+    db.from('bill_assignments').select('*').eq('month_year',MY),
+  ])
+  S.recurringAssignments = raData??[]; S.overrides = orData??[]
+  renderPaychecks()
 }
 
+// Reset a single bill back to its automatic (By Due Date / Smart) paycheck —
+// clears both its recurring default and any one-time override.
 async function clearReassign() {
   const billId = document.getElementById('reassign-bill-id').value
   closeOverlay('reassign-overlay')
-  await db.from('bill_assignments').delete().eq('bill_id',billId).eq('month_year',MY)
-  const { data } = await db.from('bill_assignments').select('*').eq('month_year',MY)
-  S.overrides = data??[]; renderPaychecks()
+  await Promise.all([
+    db.from('bill_recurring_assignments').delete().eq('bill_id',billId),
+    db.from('bill_assignments').delete().eq('bill_id',billId),
+  ])
+  S.recurringAssignments = S.recurringAssignments.filter(r=>r.bill_id!==billId)
+  S.overrides = S.overrides.filter(o=>o.bill_id!==billId)
+  renderPaychecks()
 }
 
-// Undo every manual "move bill" override for the current month at once —
-// puts all bills back on their automatic (By Due Date / Smart) paycheck.
+// Undo every manual "move bill" — recurring defaults and one-time overrides
+// alike — at once, putting all bills back on their automatic paycheck.
 async function clearAllReassigns() {
-  if (!confirm('Move all manually-placed bills back to their automatic paycheck?')) return
-  await db.from('bill_assignments').delete().eq('month_year',MY)
-  S.overrides = []; renderPaychecks()
+  if (!confirm('Move all manually-placed bills back to their automatic paycheck? This also removes any set to repeat every month.')) return
+  const billIds = S.bills.map(b=>b.id)
+  if (billIds.length) {
+    await Promise.all([
+      db.from('bill_recurring_assignments').delete().in('bill_id',billIds),
+      db.from('bill_assignments').delete().in('bill_id',billIds),
+    ])
+  }
+  S.recurringAssignments = []; S.overrides = []; renderPaychecks()
 }
 
 // ── Per-month amount override ─────────────────────
