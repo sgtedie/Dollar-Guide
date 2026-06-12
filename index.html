@@ -452,6 +452,10 @@
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </button>
       </div>
+      <div id="pc-reset-banner" class="hidden" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--blue-bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);">Some bills were manually moved to a different paycheck</span>
+        <button class="btn btn-gray btn-sm" style="flex-shrink:0;padding:5px 10px;" onclick="clearAllReassigns()">Reset All</button>
+      </div>
       <div id="pc-list"></div>
       <div class="cf-section" id="cf-section" style="display:none;">
         <div class="cf-toggle" id="cf-toggle" onclick="toggleCF()">
@@ -1218,9 +1222,13 @@ function renderPaychecks() {
   const el=document.getElementById('pc-list')
   const cfSection=document.getElementById('cf-section')
   const navEl=document.getElementById('pc-month-nav')
-  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; return }
-  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; return }
+  const resetBanner=document.getElementById('pc-reset-banner')
+  if (!S.schedules.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Go to <strong>Paychecks</strong> tab to add your pay schedule.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; if(resetBanner) resetBanner.classList.add('hidden'); return }
+  if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Go to <strong>Bills</strong> tab to add your bills.</div></div>`; cfSection.style.display='none'; if(navEl) navEl.style.display='none'; if(resetBanner) resetBanner.classList.add('hidden'); return }
   cfSection.style.display='block'; if(navEl) navEl.style.display='flex'
+  // "Reset All" banner — only shown when at least one bill has been
+  // manually moved to a different paycheck this month.
+  if(resetBanner) resetBanner.classList.toggle('hidden', !S.overrides.length)
 
   // Reference month based on navigation offset
   const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
@@ -2110,6 +2118,14 @@ async function clearReassign() {
   await db.from('bill_assignments').delete().eq('bill_id',billId).eq('month_year',MY)
   const { data } = await db.from('bill_assignments').select('*').eq('month_year',MY)
   S.overrides = data??[]; renderPaychecks()
+}
+
+// Undo every manual "move bill" override for the current month at once —
+// puts all bills back on their automatic (By Due Date / Smart) paycheck.
+async function clearAllReassigns() {
+  if (!confirm('Move all manually-placed bills back to their automatic paycheck?')) return
+  await db.from('bill_assignments').delete().eq('month_year',MY)
+  S.overrides = []; renderPaychecks()
 }
 
 // ── Per-month amount override ─────────────────────
