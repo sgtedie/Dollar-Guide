@@ -1206,10 +1206,11 @@ function renderPaychecks() {
     // count against the "left" amount, alongside bills.
     const pcIdx = allPc.findIndex(p=>p.dateStr===g.paycheck.dateStr)
     const nextPcDate = pcIdx>=0 && allPc[pcIdx+1] ? allPc[pcIdx+1].date : null
-    const totalSpent = S.expenses.reduce((s,e)=>{
+    const periodExpenses = S.expenses.filter(e=>{
       const d = parseD(e.expense_date)
-      return (d>=g.paycheck.date && (!nextPcDate || d<nextPcDate)) ? s+Number(e.amount) : s
-    },0)
+      return d>=g.paycheck.date && (!nextPcDate || d<nextPcDate)
+    })
+    const totalSpent = periodExpenses.reduce((s,e)=>s+Number(e.amount),0)
     const remaining = g.remaining - totalSpent
 
     const over=remaining<0, pct=Math.min(((g.totalBills+totalSpent)/g.paycheck.netAmount)*100,100)
@@ -1237,6 +1238,23 @@ function renderPaychecks() {
       </div>`
     }).join('')
 
+    const expRows=periodExpenses.map(e => {
+      const cat=S.categories.find(c=>c.id===e.category_id)
+      return `<div class="pc-bill-row">
+        <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px;">${cat?.icon||'🛒'}</span>
+          <div>
+            <div class="pc-bill-name">${e.description||cat?.name||'Expense'}</div>
+            <div class="pc-bill-due">${parseD(e.expense_date).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${cat?.name||'Spending'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <div class="pc-bill-amt">$${fmt(e.amount)}</div>
+          <button class="reassign-btn" onclick="delExpense('${e.id}')" title="Delete expense">🗑</button>
+        </div>
+      </div>`
+    }).join('')
+
     // Context paychecks (prev/next month) show dimmed with a label
     const contextLabel = isContext && isPast
       ? `<span class="pc-context-chip">← Last paycheck of ${new Date(prevY,prevM,1).toLocaleDateString('en-US',{month:'short'})}</span><br>`
@@ -1260,6 +1278,7 @@ function renderPaychecks() {
       </div>
       <div class="pc-body" style="display:${isNext||(!isPast&&!isContext)?'block':'none'}">
         ${rows}
+        ${expRows}
         <div class="prog-wrap">
           <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}${totalSpent>0?' + Spending $'+fmt(totalSpent):''}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
           <div class="prog-bg"><div class="prog-fill ${over?'over':''}" style="width:${pct}%"></div></div>
