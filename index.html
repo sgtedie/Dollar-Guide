@@ -1233,8 +1233,7 @@ function renderPaychecks() {
 
   // Assign only REF-MONTH bill occurrences to paychecks
   // This means each bill appears exactly once, assigned to whatever paycheck covers it
-  const allGroups = assignForMonth(sortedBills, allPc, refY, refM, S.strategy)
-  applyOverrides(allGroups, allPc)
+  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
   // Only show current month's paychecks. Bills due early next month that step back
@@ -2055,8 +2054,18 @@ function applyOverrides(groups, allPc) {
         break
       }
     }
-    // Add to target group
-    const target = newGroups.find(g=>g.paycheck.dateStr===targetDate)
+    // Add to target group — if the target paycheck currently has zero
+    // bills, assignForMonth() will have dropped it entirely, so create a
+    // placeholder group for it here (using allPc, which includes every
+    // paycheck regardless of bill count).
+    let target = newGroups.find(g=>g.paycheck.dateStr===targetDate)
+    if (!target) {
+      const targetPc = allPc.find(p=>p.dateStr===targetDate)
+      if (targetPc) {
+        target = { paycheck:targetPc, bills:[], totalBills:0, remaining:targetPc.netAmount }
+        newGroups.push(target)
+      }
+    }
     if (target) {
       const today=new Date(); today.setHours(0,0,0,0)
       const dueDate = moved ? moved.dueDate : (dueDates(bill,today,addM(today,3))[0] || target.paycheck.date)
@@ -2064,6 +2073,7 @@ function applyOverrides(groups, allPc) {
       target.bills.push({bill,dueDate,amount}); target.totalBills+=amount; target.remaining-=amount
     }
   }
+  newGroups.sort((a,b)=>a.paycheck.date-b.paycheck.date)
   return newGroups
 }
 
