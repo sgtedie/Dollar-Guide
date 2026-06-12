@@ -868,6 +868,11 @@
       <select id="cat2-link"></select>
       <p style="font-size:11px;color:var(--muted);margin-top:5px;">Expenses logged here will subtract from the linked bucket's savings, or pay down the linked debt's balance.</p>
     </div>
+    <div class="fg">
+      <label>Monthly Allowance (optional)</label>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Set aside money for this category from a specific paycheck each month. It repeats automatically — you can adjust a single month's amount later from that paycheck's card without affecting other months.</p>
+      <div id="cat2-allowance-rows"></div>
+    </div>
     <div id="cat2-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;margin-bottom:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="saveCategory2()">Save Category</button>
@@ -986,6 +991,26 @@
   </div>
 </div>
 
+<!-- ══ CATEGORY ALLOWANCE OVERRIDE MODAL ══ -->
+<div class="overlay hidden" id="cat-allow-overlay" onclick="overlayClick(event,'cat-allow-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Adjust Allowance</div>
+    <p id="ca-cat-name" style="font-weight:700;font-size:16px;margin-bottom:2px;"></p>
+    <p id="ca-month-label" style="color:var(--muted);font-size:13px;margin-bottom:18px;"></p>
+    <input type="hidden" id="ca-cat-id">
+    <input type="hidden" id="ca-paycheck-idx">
+    <input type="hidden" id="ca-month-year">
+    <div class="fg">
+      <label>Amount for this paycheck only</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="ca-value" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    </div>
+    <button class="btn btn-accent" style="margin-top:10px;" onclick="saveCatAllowanceOverride()">Save</button>
+    <button class="btn btn-gray" style="margin-top:8px;" onclick="resetCatAllowanceOverride()">Reset to Usual Amount</button>
+    <button class="btn btn-gray" style="margin-top:8px;" onclick="closeOverlay('cat-allow-overlay')">Cancel</button>
+  </div>
+</div>
+
 <!-- ══ TEMPLATES MODAL ══ -->
 <div class="overlay hidden" id="tpl-overlay" onclick="overlayClick(event,'tpl-overlay')">
   <div class="modal">
@@ -1019,7 +1044,7 @@ const TEMPLATES = {
   Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], amountOverrides:[], buckets:[], categories:[], expenses:[], debts:[], strategy:'smart', authMode:'login' }
+const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], amountOverrides:[], buckets:[], categories:[], expenses:[], debts:[], categoryAllowances:[], categoryAllowanceOverrides:[], strategy:'smart', authMode:'login' }
 let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
 let spPage = 0   // month offset for Spending tab
 
@@ -1040,6 +1065,30 @@ function billAmount(bill, monthYear) {
 }
 function hasAmountOverride(billId, monthYear) {
   return S.amountOverrides.some(o=>o.bill_id===billId && o.month_year===monthYear)
+}
+
+// ── Category allowances (recurring monthly amount per paycheck) ──
+// "Set aside $X for this category from the Nth paycheck of the
+// month, every month." paycheck_index is 1-based, counted in date
+// order among that month's paychecks. category_allowance_overrides
+// lets ONE month use a different amount without changing the
+// recurring default for past/future months — same pattern as
+// billAmount()/hasAmountOverride() above.
+function categoryAllowance(categoryId, paycheckIndex, monthYear) {
+  const o = S.categoryAllowanceOverrides.find(x=>x.category_id===categoryId && x.paycheck_index===paycheckIndex && x.month_year===monthYear)
+  if (o) return Number(o.amount)
+  const a = S.categoryAllowances.find(x=>x.category_id===categoryId && x.paycheck_index===paycheckIndex)
+  return a ? Number(a.amount) : 0
+}
+function hasAllowanceOverride(categoryId, paycheckIndex, monthYear) {
+  return S.categoryAllowanceOverrides.some(o=>o.category_id===categoryId && o.paycheck_index===paycheckIndex && o.month_year===monthYear)
+}
+// All paychecks (across schedules) that fall in a given month, sorted
+// by date — index+1 in this list is a paycheck's 1-based position.
+function getMonthPaychecks(refY, refM, mo=4) {
+  if (!S.schedules.length) return []
+  const allPc = S.schedules.flatMap(s => genPayDates(s, mo)); allPc.sort((a,b)=>a.date-b.date)
+  return allPc.filter(p=>p.date.getFullYear()===refY && p.date.getMonth()===refM)
 }
 
 // ── Boot ──────────────────────────────────────────
@@ -1087,7 +1136,7 @@ function showApp()  { document.getElementById('auth-screen').style.display='none
 
 // ── Load ──────────────────────────────────────────
 async function loadAll() {
-  const [br, sr, pr, or_, bk, cr, er, dr, amr] = await Promise.all([
+  const [br, sr, pr, or_, bk, cr, er, dr, amr, car, caor] = await Promise.all([
     db.from('bills').select('*').eq('is_active', true).order('due_day'),
     db.from('pay_schedule').select('*').order('created_at'),
     db.from('bill_payments').select('*'),
@@ -1097,11 +1146,14 @@ async function loadAll() {
     db.from('expenses').select('*').order('expense_date', { ascending: false }),
     db.from('debts').select('*').order('created_at'),
     db.from('bill_amount_overrides').select('*'),
+    db.from('category_allowances').select('*'),
+    db.from('category_allowance_overrides').select('*'),
   ])
   S.bills=br.data??[]; S.schedules=sr.data??[]; S.payments=pr.data??[]
   S.overrides=or_.data??[]; S.buckets=bk.data??[]
   S.categories=cr.data??[]; S.expenses=er.data??[]
   S.debts=dr.data??[]; S.amountOverrides=amr.data??[]
+  S.categoryAllowances=car.data??[]; S.categoryAllowanceOverrides=caor.data??[]
   await accrueDebtInterest()
 }
 function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow(); renderSpending(); renderDebts() }
@@ -1188,7 +1240,22 @@ function renderPaychecks() {
   // Only show current month's paychecks. Bills due early next month that step back
   // to this month's last paycheck (e.g. Auto Insurance Jul 8 → Jun 25) appear here
   // so the user knows to set that money aside. Jul view won't show Jun 25.
-  const window = allGroups.filter(g => inM(g, refY, refM))
+  let window = allGroups.filter(g => inM(g, refY, refM))
+
+  // All paychecks for this month, in date order — index+1 is each
+  // paycheck's 1-based "Nth paycheck of the month" position, used to
+  // look up category allowances. assignForMonth() drops paychecks with
+  // no bills, so add a placeholder card for any paycheck that has a
+  // category allowance but no bills, otherwise that allowance would
+  // never be shown.
+  const monthPcs = getMonthPaychecks(refY, refM, pcPage+4)
+  monthPcs.forEach((p,i) => {
+    const pi = i+1
+    if (!window.some(g=>g.paycheck.dateStr===p.dateStr) && S.categories.some(cat=>categoryAllowance(cat.id, pi, refMY) > 0)) {
+      window.push({ paycheck:p, bills:[], totalBills:0, remaining:p.netAmount })
+    }
+  })
+  window.sort((a,b)=>a.paycheck.date-b.paycheck.date)
 
   // Update month navigator label
   if(navEl) document.getElementById('pc-nav-label').textContent =
@@ -1216,9 +1283,25 @@ function renderPaychecks() {
       return d>=g.paycheck.date && (!nextPcDate || d<nextPcDate)
     })
     const totalSpent = periodExpenses.reduce((s,e)=>s+Number(e.amount),0)
-    const remaining = g.remaining - totalSpent
 
-    const over=remaining<0, pct=Math.min(((g.totalBills+totalSpent)/g.paycheck.netAmount)*100,100)
+    // Category allowances assigned to this paycheck's position. These
+    // are money "set aside" from this paycheck and subtract from "left"
+    // regardless of whether they've been spent yet.
+    const paycheckIndex = monthPcs.findIndex(p=>p.dateStr===g.paycheck.dateStr) + 1
+    const allowCats = S.categories.filter(cat => categoryAllowance(cat.id, paycheckIndex, refMY) > 0)
+    const totalAllowance = allowCats.reduce((s,cat)=>s+categoryAllowance(cat.id, paycheckIndex, refMY), 0)
+
+    // Expenses for categories WITH an allowance this paycheck come out of
+    // that allowance (already subtracted above), so they don't subtract
+    // from "left" again. Expenses for categories with no allowance here
+    // still subtract directly, as before.
+    const allowCatIds = new Set(allowCats.map(c=>c.id))
+    const unallocExpenses = periodExpenses.filter(e=>!allowCatIds.has(e.category_id))
+    const unallocSpent = unallocExpenses.reduce((s,e)=>s+Number(e.amount),0)
+
+    const remaining = g.remaining - totalAllowance - unallocSpent
+
+    const over=remaining<0, pct=Math.min(((g.totalBills+totalAllowance+unallocSpent)/g.paycheck.netAmount)*100,100)
     const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
 
     const rows=g.bills.map(ab => {
@@ -1244,7 +1327,7 @@ function renderPaychecks() {
       </div>`
     }).join('')
 
-    const expRows=periodExpenses.map(e => {
+    const expRows=unallocExpenses.map(e => {
       const cat=S.categories.find(c=>c.id===e.category_id)
       return `<div class="pc-bill-row">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
@@ -1257,6 +1340,29 @@ function renderPaychecks() {
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <div class="pc-bill-amt">$${fmt(e.amount)}</div>
           <button class="reassign-btn" onclick="delExpense('${e.id}')" title="Delete expense">🗑</button>
+        </div>
+      </div>`
+    }).join('')
+
+    // Allowance rows — money set aside for a category from this paycheck.
+    // Shows how much of it has been spent so far, with a ✎ to adjust just
+    // this month's amount without changing the recurring default.
+    const allowRows=allowCats.map(cat => {
+      const allowAmt = categoryAllowance(cat.id, paycheckIndex, refMY)
+      const isAdj = hasAllowanceOverride(cat.id, paycheckIndex, refMY)
+      const spent = periodExpenses.filter(e=>e.category_id===cat.id).reduce((s,e)=>s+Number(e.amount),0)
+      const left = allowAmt - spent
+      return `<div class="pc-bill-row">
+        <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px;">${cat.icon||'🛒'}</span>
+          <div>
+            <div class="pc-bill-name">${cat.name}<span class="chip chip-job">Allowance</span>${isAdj?'<span class="chip chip-adjusted">Adjusted</span>':''}</div>
+            <div class="pc-bill-due">${spent>0?`$${fmt(spent)} spent · $${fmt(Math.max(0,left))} left`:'Set aside this paycheck'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <div class="pc-bill-amt">$${fmt(allowAmt)}</div>
+          <button class="reassign-btn" onclick="openCatAllowanceOverride('${cat.id}',${paycheckIndex},'${refMY}')" title="Use a different amount this month">✎</button>
         </div>
       </div>`
     }).join('')
@@ -1275,7 +1381,7 @@ function renderPaychecks() {
           ${isNext?'<span class="chip chip-next">▶ Next Paycheck</span><br>':''}
           ${isPast&&!isContext?'<span class="chip chip-past">Past</span><br>':''}
           <div class="pc-date">${g.paycheck.label} ${srcLabel}</div>
-          <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due${totalSpent>0?` · $${fmt(totalSpent)} spent`:''}</div>
+          <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due${totalAllowance>0?` · $${fmt(totalAllowance)} set aside`:''}${totalSpent>0?` · $${fmt(totalSpent)} spent`:''}</div>
         </div>
         <div class="pc-right">
           <div class="pc-amount">$${fmt(g.paycheck.netAmount)}</div>
@@ -1284,9 +1390,10 @@ function renderPaychecks() {
       </div>
       <div class="pc-body" style="display:${isNext||(!isPast&&!isContext)?'block':'none'}">
         ${rows}
+        ${allowRows}
         ${expRows}
         <div class="prog-wrap">
-          <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}${totalSpent>0?' + Spending $'+fmt(totalSpent):''}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
+          <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}${totalAllowance>0?' + Allowances $'+fmt(totalAllowance):''}${unallocSpent>0?' + Spending $'+fmt(unallocSpent):''}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
           <div class="prog-bg"><div class="prog-fill ${over?'over':''}" style="width:${pct}%"></div></div>
           ${over?`<div class="over-msg">⚠ Over budget by $${fmt(Math.abs(remaining))}</div>`:''}
         </div>
@@ -2033,6 +2140,49 @@ async function resetAmountOverride() {
   S.amountOverrides = data??[]; renderAll()
 }
 
+// ── Per-month category allowance override ────────────────
+function openCatAllowanceOverride(categoryId, paycheckIndex, monthYear) {
+  const cat = S.categories.find(c=>c.id===categoryId)
+  if (!cat) return
+  document.getElementById('ca-cat-id').value = categoryId
+  document.getElementById('ca-paycheck-idx').value = paycheckIndex
+  document.getElementById('ca-month-year').value = monthYear
+  document.getElementById('ca-cat-name').textContent = `${cat.icon||'🛒'} ${cat.name}`
+  const base = S.categoryAllowances.find(a=>a.category_id===categoryId && a.paycheck_index===paycheckIndex)
+  const baseAmt = base ? Number(base.amount) : 0
+  const [y,m] = monthYear.split('-')
+  const label = new Date(Number(y), Number(m)-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'})
+  document.getElementById('ca-month-label').textContent = `Usual amount $${fmt(baseAmt)} · ${ordinal(paycheckIndex)} paycheck of ${label} only`
+  document.getElementById('ca-value').value = categoryAllowance(categoryId, paycheckIndex, monthYear)
+  document.getElementById('cat-allow-overlay').classList.remove('hidden')
+}
+
+async function saveCatAllowanceOverride() {
+  const categoryId = document.getElementById('ca-cat-id').value
+  const paycheckIndex = parseInt(document.getElementById('ca-paycheck-idx').value)
+  const monthYear = document.getElementById('ca-month-year').value
+  const amount = parseFloat(document.getElementById('ca-value').value)
+  if (isNaN(amount) || amount < 0) { alert('Enter a valid amount.'); return }
+  closeOverlay('cat-allow-overlay')
+  const { error } = await db.from('category_allowance_overrides').upsert(
+    { user_id:S.effectiveUserId, category_id:categoryId, paycheck_index:paycheckIndex, month_year:monthYear, amount },
+    { onConflict:'category_id,paycheck_index,month_year' }
+  )
+  if (error) { alert('Could not save: '+error.message); return }
+  const { data } = await db.from('category_allowance_overrides').select('*')
+  S.categoryAllowanceOverrides = data??[]; renderAll()
+}
+
+async function resetCatAllowanceOverride() {
+  const categoryId = document.getElementById('ca-cat-id').value
+  const paycheckIndex = parseInt(document.getElementById('ca-paycheck-idx').value)
+  const monthYear = document.getElementById('ca-month-year').value
+  closeOverlay('cat-allow-overlay')
+  await db.from('category_allowance_overrides').delete().eq('category_id',categoryId).eq('paycheck_index',paycheckIndex).eq('month_year',monthYear)
+  const { data } = await db.from('category_allowance_overrides').select('*')
+  S.categoryAllowanceOverrides = data??[]; renderAll()
+}
+
 // ── Buckets ───────────────────────────────────────
 function renderBuckets() {
   const listEl = document.getElementById('buckets-list')
@@ -2254,6 +2404,25 @@ function openCategoryModal(editId) {
   if (S.debts.length)   linkOpts += S.debts.map(d=>`<option value="debt:${d.id}">${d.icon||'💳'} ${d.name} (debt)</option>`).join('')
   linkSel.innerHTML = linkOpts
 
+  // Build "Monthly Allowance" rows — one per paycheck in the month
+  // currently shown on the Spending tab. Storing by 1-based position
+  // (not a specific date) is what makes the amount "recurring".
+  const allowEl = document.getElementById('cat2-allowance-rows')
+  const spRefDate = new Date(NOW.getFullYear(), NOW.getMonth()+spPage, 1)
+  const monthPcs = getMonthPaychecks(spRefDate.getFullYear(), spRefDate.getMonth())
+  if (!monthPcs.length) {
+    allowEl.innerHTML = '<p style="font-size:12px;color:var(--muted);">Add a pay schedule in the Paychecks tab to set per-paycheck allowances.</p>'
+  } else {
+    allowEl.innerHTML = monthPcs.map((pc,i) => {
+      const idx = i+1
+      const existing = editId ? S.categoryAllowances.find(a=>a.category_id===editId && a.paycheck_index===idx) : null
+      return `<div class="fg" style="margin-bottom:8px;">
+        <label style="font-size:12px;font-weight:600;">${ordinal(idx)} paycheck · ${pc.label}</label>
+        <div class="ipw"><span class="ipw-pre">$</span><input type="number" class="cat2-allow-input" data-idx="${idx}" placeholder="0.00" min="0" step="0.01" inputmode="decimal" value="${existing?Number(existing.amount):''}"></div>
+      </div>`
+    }).join('')
+  }
+
   if (editId) {
     const c = S.categories.find(x=>x.id===editId)
     document.getElementById('cat2-name').value  = c.name
@@ -2279,13 +2448,29 @@ async function saveCategory2() {
   const [linkType, linkId] = linkVal==='none' ? ['none', null] : linkVal.split(':')
   if (!name) return showAlert('cat2-alert','Enter a category name','error')
   const payload = { name, icon, monthly_limit:limit, link_type:linkType, link_id:linkId }
-  let err
+  let err, catId = id
   if (id) ({ error:err }=await db.from('spending_categories').update(payload).eq('id',id))
-  else    ({ error:err }=await db.from('spending_categories').insert({...payload,user_id:S.effectiveUserId}))
+  else {
+    const { data:inserted, error:insErr } = await db.from('spending_categories').insert({...payload,user_id:S.effectiveUserId}).select().single()
+    err = insErr; catId = inserted?.id
+  }
   if (err) return showAlert('cat2-alert',err.message,'error')
+
+  // Save per-paycheck monthly allowances (recurring defaults)
+  if (catId) {
+    const inputs = document.querySelectorAll('#cat2-allowance-rows .cat2-allow-input')
+    for (const inp of inputs) {
+      const idx = parseInt(inp.dataset.idx)
+      const amt = parseFloat(inp.value)
+      if (!amt || amt<=0) await db.from('category_allowances').delete().eq('category_id',catId).eq('paycheck_index',idx)
+      else await db.from('category_allowances').upsert({ user_id:S.effectiveUserId, category_id:catId, paycheck_index:idx, amount:amt }, { onConflict:'category_id,paycheck_index' })
+    }
+    const { data:caData } = await db.from('category_allowances').select('*'); S.categoryAllowances = caData??[]
+  }
+
   closeOverlay('cat2-overlay')
   const { data }=await db.from('spending_categories').select('*').order('created_at'); S.categories=data??[]
-  renderSpending()
+  renderAll()
 }
 
 async function deleteCategory2() {
@@ -2295,8 +2480,10 @@ async function deleteCategory2() {
   await db.from('spending_categories').delete().eq('id',id)
   S.categories=S.categories.filter(c=>c.id!==id)
   S.expenses=S.expenses.filter(e=>e.category_id!==id)
+  S.categoryAllowances=S.categoryAllowances.filter(a=>a.category_id!==id)
+  S.categoryAllowanceOverrides=S.categoryAllowanceOverrides.filter(a=>a.category_id!==id)
   closeOverlay('cat2-overlay')
-  renderSpending()
+  renderAll()
 }
 
 function openExpenseModal(catId) {
