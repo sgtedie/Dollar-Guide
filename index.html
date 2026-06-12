@@ -968,10 +968,28 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Move Bill</div>
     <p id="reassign-bill-name" style="font-weight:700;font-size:16px;margin-bottom:6px;"></p>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Choose which paycheck should cover this bill:</p>
     <input type="hidden" id="reassign-bill-id">
     <input type="hidden" id="reassign-due-date">
-    <div id="reassign-options"></div>
+    <input type="hidden" id="reassign-bill-amount">
+
+    <div class="toggle-row" style="margin-bottom:14px;">
+      <button class="toggle-btn on" id="reassign-mode-full" onclick="setReassignMode('full')">Pay in full</button>
+      <button class="toggle-btn" id="reassign-mode-split" onclick="setReassignMode('split')">Split payment</button>
+    </div>
+
+    <div id="reassign-full-section">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Choose which paycheck should cover this bill:</p>
+      <div id="reassign-options"></div>
+    </div>
+
+    <div id="reassign-split-section" class="hidden">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Split this bill across paychecks — set an amount and a paycheck for each portion:</p>
+      <div id="split-rows"></div>
+      <button class="btn btn-gray" style="margin-top:4px;margin-bottom:10px;font-size:13px;padding:9px;" onclick="addSplitRow()">+ Add another portion</button>
+      <p id="split-total-hint" style="color:var(--muted);font-size:12px;margin-bottom:10px;"></p>
+      <button class="btn btn-accent" onclick="saveSplit()">Save Split</button>
+    </div>
+
     <button class="btn btn-gray" style="margin-top:10px;" onclick="clearReassign()">Reset to Auto</button>
     <button class="btn btn-gray" style="margin-top:8px;" onclick="closeOverlay('reassign-overlay')">Cancel</button>
   </div>
@@ -1268,7 +1286,7 @@ function renderPaychecks() {
 
   // Assign only REF-MONTH bill occurrences to paychecks
   // This means each bill appears exactly once, assigned to whatever paycheck covers it
-  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc)
+  const allGroups = applySplits(applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc), allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
   // Only show current month's paychecks. Bills due early next month that step back
@@ -1335,23 +1353,26 @@ function renderPaychecks() {
     const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
 
     const rows=g.bills.map(ab => {
-      const paid=paidSet.has(ab.bill.id), pc=PRIO_COLOR[ab.bill.priority||'essential']
-      const isOverridden=S.recurringAssignments.some(r=>r.bill_id===ab.bill.id) || S.overrides.some(o=>o.bill_id===ab.bill.id && o.month_year===refMY)
+      const isSplit = ab.splitTotal && ab.splitTotal>1
+      const paid = isSplit ? isPortionPaid(ab.bill.id, refMY, ab.splitIndex) : paidSet.has(ab.bill.id)
+      const pc=PRIO_COLOR[ab.bill.priority||'essential']
+      const isOverridden=!isSplit && (S.recurringAssignments.some(r=>r.bill_id===ab.bill.id) || S.overrides.some(o=>o.bill_id===ab.bill.id && o.month_year===refMY))
       const abMY=ymKey(ab.dueDate)
-      const isAdjusted=hasAmountOverride(ab.bill.id,abMY)
+      const isAdjusted=!isSplit && hasAmountOverride(ab.bill.id,abMY)
       const linkedDebt = ab.bill.link_debt_id ? S.debts.find(d=>d.id===ab.bill.link_debt_id) : null
+      const splitChip = isSplit ? `<span class="chip chip-job">Split ${ab.splitIndex} of ${ab.splitTotal}</span>` : ''
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
-          <button class="check-circle ${paid?'on':''}" style="width:22px;height:22px;margin-top:1px;" onclick="togglePaid('${ab.bill.id}',${paid},'${refMY}')" title="Mark as paid">${paid?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
+          <button class="check-circle ${paid?'on':''}" style="width:22px;height:22px;margin-top:1px;" onclick="togglePaid('${ab.bill.id}',${paid},'${refMY}',${ab.splitIndex||0},${isSplit?ab.amount:'null'})" title="Mark as paid">${paid?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
           <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
           <div>
-            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}${isAdjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}${linkedDebt?`<span class="chip chip-job">${linkedDebt.icon||'💳'} Pays down ${linkedDebt.name}</span>`:''}</div>
+            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}${splitChip}${isAdjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}${linkedDebt?`<span class="chip chip-job">${linkedDebt.icon||'💳'} Pays down ${linkedDebt.name}</span>`:''}</div>
             <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <div class="pc-bill-amt">$${fmt(ab.amount)}</div>
-          <button class="reassign-btn" onclick="openAmountOverride('${ab.bill.id}','${abMY}')" title="Use a different amount this month">✎</button>
+          ${isSplit?'':`<button class="reassign-btn" onclick="openAmountOverride('${ab.bill.id}','${abMY}')" title="Use a different amount this month">✎</button>`}
           <button class="reassign-btn" onclick="openReassign('${ab.bill.id}','${ab.bill.name}','${g.paycheck.dateStr}','${dStr(ab.dueDate)}')" title="Move to different paycheck">↔</button>
         </div>
       </div>`
@@ -1503,24 +1524,35 @@ function renderBills() {
 // If a bill is "Pay Down Debt" linked, marking it paid subtracts its
 // amount for that month from the linked debt's balance. Pass reverse=true
 // to undo (e.g. un-marking as paid).
-async function applyBillDebtPayment(bill, monthYear, reverse=false) {
+// amountOverride lets a split portion pay down the debt by just its own
+// share instead of the bill's full amount.
+async function applyBillDebtPayment(bill, monthYear, reverse=false, amountOverride=null) {
   if (!bill || !bill.link_debt_id) return
   const d = S.debts.find(x=>x.id===bill.link_debt_id)
   if (!d) return
-  const amount = billAmount(bill, monthYear)
+  const amount = amountOverride!=null ? amountOverride : billAmount(bill, monthYear)
   const delta = reverse ? amount : -amount
   const newBalance = Math.max(0, Number(d.balance||0) + delta)
   await db.from('debts').update({ balance:newBalance }).eq('id', d.id)
   d.balance = newBalance
 }
 
-async function togglePaid(id, wasPaid, monthYear=MY) {
-  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',monthYear)
-  else         await db.from('bill_payments').insert({ user_id:S.effectiveUserId, bill_id:id, month_year:monthYear })
+// Is portion `splitIndex` (0 = whole/unsplit bill) of `billId` marked paid
+// for month `my`? Each split portion is tracked independently.
+function isPortionPaid(billId, my, splitIndex=0) {
+  return S.payments.some(p=>p.bill_id===billId && p.month_year===my && (p.split_index||0)===splitIndex)
+}
+
+// splitIndex/amountOverride are optional and default to the pre-split
+// behavior (whole-bill row, full bill amount) — existing 2- and 3-arg
+// calls are unaffected.
+async function togglePaid(id, wasPaid, monthYear=MY, splitIndex=0, amountOverride=null) {
+  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',monthYear).eq('split_index',splitIndex)
+  else         await db.from('bill_payments').insert({ user_id:S.effectiveUserId, bill_id:id, month_year:monthYear, split_index:splitIndex })
   const { data } = await db.from('bill_payments').select('*')
   S.payments=data??[]
   const bill = S.bills.find(b=>b.id===id)
-  await applyBillDebtPayment(bill, monthYear, wasPaid)
+  await applyBillDebtPayment(bill, monthYear, wasPaid, amountOverride)
   renderAll()
 }
 
@@ -2135,7 +2167,9 @@ function applyOverrides(groups, allPc) {
       targetDate = oneTime.paycheck_date
     } else {
       const ra = S.recurringAssignments.find(r=>r.bill_id===ab.bill.id)
-      if (ra) {
+      // A split bill's single paycheck_index is unused — applySplits()
+      // fans it out across each portion's own target paycheck instead.
+      if (ra && !(ra.split_parts && ra.split_parts.length)) {
         const pc = candidatesForDue(ab.dueDate)[ra.paycheck_index - 1]
         if (pc) targetDate = pc.dateStr
       }
@@ -2167,11 +2201,66 @@ function applyOverrides(groups, allPc) {
   return newGroups
 }
 
+// ── Apply bill splits ──────────────────────────────
+// A bill with bill_recurring_assignments.split_parts set is paid from
+// MULTIPLE paychecks instead of one: each part {amount, paycheck_index}
+// (paycheck_index is relative to candidatesForDue(dueDate), same convention
+// as a normal recurring assignment) replaces the single whole-bill
+// occurrence with its own line item placed on its own paycheck, tagged
+// splitIndex/splitTotal (1-based) so the UI can show "1 of 2" / "2 of 2"
+// and track each portion's paid status independently. Runs AFTER
+// applyOverrides, as a pure post-process — it never changes how
+// assignForMonth/applyOverrides place or rebalance non-split bills.
+function applySplits(groups, allPc) {
+  const splitBills = S.recurringAssignments.filter(r=>r.split_parts && r.split_parts.length)
+  if (!splitBills.length) return groups
+
+  const newGroups = groups.map(g=>({
+    paycheck:g.paycheck,
+    bills:[...g.bills],
+    totalBills:g.totalBills,
+    remaining:g.remaining,
+  }))
+
+  for (const g of newGroups) {
+    for (let i=g.bills.length-1; i>=0; i--) {
+      const ab = g.bills[i]
+      if (ab.splitIndex) continue // already a split portion — don't re-split
+      const ra = splitBills.find(r=>r.bill_id===ab.bill.id)
+      if (!ra) continue
+
+      // Remove the single whole-bill occurrence
+      g.bills.splice(i,1); g.totalBills-=ab.amount; g.remaining+=ab.amount
+
+      const candidates = candidatesForDue(ab.dueDate)
+      ra.split_parts.forEach((part, idx) => {
+        const amount = Number(part.amount)||0
+        const pc = candidates[part.paycheck_index - 1]
+        const targetDate = pc ? pc.dateStr : g.paycheck.dateStr
+        let target = newGroups.find(x=>x.paycheck.dateStr===targetDate)
+        if (!target) {
+          const targetPc = allPc.find(p=>p.dateStr===targetDate)
+          if (targetPc) { target = { paycheck:targetPc, bills:[], totalBills:0, remaining:targetPc.netAmount }; newGroups.push(target) }
+        }
+        if (!target) target = g // last-resort fallback, shouldn't happen
+        target.bills.push({ bill:ab.bill, dueDate:ab.dueDate, amount, splitIndex:idx+1, splitTotal:ra.split_parts.length })
+        target.totalBills += amount; target.remaining -= amount
+      })
+    }
+  }
+
+  newGroups.forEach(g => g.bills.sort((a,b)=>a.dueDate-b.dueDate))
+  newGroups.sort((a,b)=>a.paycheck.date-b.paycheck.date)
+  return newGroups
+}
+
 // ── Reassign ──────────────────────────────────────
 function openReassign(billId, billName, currentDate, dueDate) {
   document.getElementById('reassign-bill-id').value = billId
   document.getElementById('reassign-due-date').value = dueDate
   document.getElementById('reassign-bill-name').textContent = billName
+  const bill = S.bills.find(b=>b.id===billId)
+  document.getElementById('reassign-bill-amount').value = bill ? billAmount(bill, ymKey(parseD(dueDate))) : ''
   const allPc = S.schedules.flatMap(s=>genPayDates(s,3)).sort((a,b)=>a.date-b.date)
   document.getElementById('reassign-options').innerHTML = allPc.map(p=>`
     <div class="reassign-option ${p.dateStr===currentDate?'active':''}" onclick="saveReassign('${billId}','${p.dateStr}','${dueDate}')">
@@ -2181,7 +2270,103 @@ function openReassign(billId, billName, currentDate, dueDate) {
       </div>
       ${p.dateStr===currentDate?'<span style="color:var(--accent);font-weight:700;font-size:12px;">Current</span>':''}
     </div>`).join('')
+
+  // Pre-fill the split section from any existing split config for this bill
+  document.getElementById('split-rows').innerHTML = ''
+  const ra = S.recurringAssignments.find(r=>r.bill_id===billId)
+  const parts = ra && ra.split_parts && ra.split_parts.length ? ra.split_parts : null
+  if (parts) {
+    parts.forEach(part => addSplitRow(part.amount, part.paycheck_index))
+    setReassignMode('split')
+  } else {
+    setReassignMode('full')
+  }
+
   document.getElementById('reassign-overlay').classList.remove('hidden')
+}
+
+// Toggle between "Pay in full" (pick one paycheck from the list) and
+// "Split payment" (custom amount + paycheck per portion).
+function setReassignMode(mode) {
+  document.getElementById('reassign-mode-full').classList.toggle('on', mode==='full')
+  document.getElementById('reassign-mode-split').classList.toggle('on', mode==='split')
+  document.getElementById('reassign-full-section').classList.toggle('hidden', mode!=='full')
+  document.getElementById('reassign-split-section').classList.toggle('hidden', mode!=='split')
+  if (mode==='split' && !document.getElementById('split-rows').children.length) {
+    const amount = parseFloat(document.getElementById('reassign-bill-amount').value)||0
+    addSplitRow((amount/2).toFixed(2), null)
+    addSplitRow((amount/2).toFixed(2), null)
+  }
+  if (mode==='split') updateSplitHint()
+}
+
+// Add one split-portion row: an amount input + a dropdown of candidate
+// paychecks (candidatesForDue(dueDate) — same list/convention saveReassign
+// uses for a normal "Move Bill", so the saved paycheck_index means the same
+// thing whether a bill is split or not).
+function addSplitRow(amount, paycheckIndex) {
+  const dueDate = parseD(document.getElementById('reassign-due-date').value)
+  const candidates = candidatesForDue(dueDate)
+  const options = candidates.map((p,i)=>`<option value="${i+1}" ${paycheckIndex===i+1?'selected':''}>${p.label}${p.schedName?' · '+p.schedName:''}</option>`).join('')
+  const row = document.createElement('div')
+  row.className = 'split-row'
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:10px;'
+  row.innerHTML = `
+    <div class="ipw" style="flex:1;"><span class="ipw-pre">$</span><input type="number" class="split-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" value="${amount!=null?amount:''}" oninput="updateSplitHint()"></div>
+    <select class="split-paycheck" style="flex:1.6;">${options}</select>
+    <button class="reassign-btn" onclick="removeSplitRow(this)" title="Remove portion">✕</button>`
+  document.getElementById('split-rows').appendChild(row)
+  updateSplitHint()
+}
+
+function removeSplitRow(btn) {
+  const rows = document.getElementById('split-rows')
+  if (rows.children.length <= 1) return
+  btn.closest('.split-row').remove()
+  updateSplitHint()
+}
+
+// Shows a running total of the split portions vs. the bill's usual amount —
+// informational only, doesn't block saving (portions don't have to add up
+// exactly, e.g. if one paycheck covers a bit extra).
+function updateSplitHint() {
+  const hint = document.getElementById('split-total-hint')
+  if (!hint) return
+  const sum = [...document.querySelectorAll('#split-rows .split-amount')].reduce((s,inp)=>s+(parseFloat(inp.value)||0), 0)
+  const billAmt = parseFloat(document.getElementById('reassign-bill-amount').value)||0
+  hint.textContent = `Portions total $${fmt(sum)} of $${fmt(billAmt)} bill amount.`
+  hint.style.color = Math.abs(sum-billAmt)<0.005 ? 'var(--muted)' : 'var(--accent-dark)'
+}
+
+// Save a custom split: each portion gets its own amount and its own
+// candidatesForDue-relative paycheck_index. Recurring by default, same as a
+// normal "Move Bill" — applies to every future occurrence until reset.
+async function saveSplit() {
+  const billId = document.getElementById('reassign-bill-id').value
+  const rows = [...document.querySelectorAll('#split-rows .split-row')]
+  if (rows.length < 2) { alert('A split needs at least 2 portions — add another, or use "Pay in full".'); return }
+  const parts = []
+  for (const row of rows) {
+    const amount = parseFloat(row.querySelector('.split-amount').value)
+    const paycheckIndex = Number(row.querySelector('.split-paycheck').value)
+    if (isNaN(amount) || amount <= 0) { alert('Enter a valid amount for each portion.'); return }
+    if (!paycheckIndex) { alert('Choose a paycheck for each portion.'); return }
+    parts.push({ amount, paycheck_index: paycheckIndex })
+  }
+  closeOverlay('reassign-overlay')
+  const { error } = await db.from('bill_recurring_assignments').upsert(
+    { user_id:S.effectiveUserId, bill_id:billId, paycheck_index:parts[0].paycheck_index, split_parts:parts },
+    { onConflict:'bill_id' }
+  )
+  if (error) { alert('Could not save: '+error.message); return }
+  // A new recurring default supersedes any one-time "this month only" override.
+  await db.from('bill_assignments').delete().eq('bill_id',billId)
+  const [{ data:raData }, { data:orData }] = await Promise.all([
+    db.from('bill_recurring_assignments').select('*'),
+    db.from('bill_assignments').select('*').eq('month_year',MY),
+  ])
+  S.recurringAssignments = raData??[]; S.overrides = orData??[]
+  renderPaychecks()
 }
 
 // Moving a bill sets it to recur on that same relative position every
@@ -2198,8 +2383,9 @@ async function saveReassign(billId, paycheckDate, dueDateStr) {
   const candidates = candidatesForDue(dueDate)
   const paycheckIndex = candidates.findIndex(p=>p.dateStr===paycheckDate) + 1
   if (!paycheckIndex) { alert('Could not save: paycheck not found'); return }
+  // Picking a single paycheck ("Pay in full") also clears any previous split.
   const { error } = await db.from('bill_recurring_assignments').upsert(
-    { user_id:S.effectiveUserId, bill_id:billId, paycheck_index:paycheckIndex },
+    { user_id:S.effectiveUserId, bill_id:billId, paycheck_index:paycheckIndex, split_parts:null },
     { onConflict:'bill_id' }
   )
   if (error) { alert('Could not save: '+error.message); return }
