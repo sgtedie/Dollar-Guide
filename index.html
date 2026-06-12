@@ -693,6 +693,11 @@
       </div>
       <p style="font-size:11px;color:var(--muted);margin-top:6px;">Essentials get funded before important, important before optional.</p>
     </div>
+    <div class="fg">
+      <label>Pay Down Debt (optional)</label>
+      <select id="m-link-debt"></select>
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">When this bill is marked paid, its amount will be subtracted from the selected debt's balance.</p>
+    </div>
     <div id="m-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="saveBill()">Save Bill</button>
@@ -1221,12 +1226,13 @@ function renderPaychecks() {
       const isOverridden=S.overrides.some(o=>o.bill_id===ab.bill.id)
       const abMY=ymKey(ab.dueDate)
       const isAdjusted=hasAmountOverride(ab.bill.id,abMY)
+      const linkedDebt = ab.bill.link_debt_id ? S.debts.find(d=>d.id===ab.bill.link_debt_id) : null
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
           <button class="check-circle ${paid?'on':''}" style="width:22px;height:22px;margin-top:1px;" onclick="togglePaid('${ab.bill.id}',${paid},'${refMY}')" title="Mark as paid">${paid?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
           <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
           <div>
-            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}${isAdjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}</div>
+            <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}${isAdjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}${linkedDebt?`<span class="chip chip-job">${linkedDebt.icon||'💳'} Pays down ${linkedDebt.name}</span>`:''}</div>
             <div class="pc-bill-due">Due ${ab.dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${ab.bill.category}</div>
           </div>
         </div>
@@ -1338,10 +1344,11 @@ function renderBills() {
   el.innerHTML=sorted.map(b => {
     const paid=paidSet.has(b.id), pc=PRIO_COLOR[b.priority||'essential'], pl=PRIO_LABEL[b.priority||'essential']
     const amt=billAmount(b,MY), adjusted=hasAmountOverride(b.id,MY)
+    const linkedDebt = b.link_debt_id ? S.debts.find(d=>d.id===b.link_debt_id) : null
     return `<div class="bill-row ${paid?'paid':''}">
       <button class="check-circle ${paid?'on':''}" onclick="togglePaid('${b.id}',${paid})">${paid?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
       <div class="bill-info">
-        <div class="bill-name"><span class="prio-dot" style="background:${pc};"></span>${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}${adjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}</div>
+        <div class="bill-name"><span class="prio-dot" style="background:${pc};"></span>${b.name}${paid?'<span class="chip chip-paid">Paid</span>':''}${b.bill_type==='single'?'<span class="chip chip-single">One-time</span>':''}${adjusted?'<span class="chip chip-adjusted">Adjusted</span>':''}${linkedDebt?`<span class="chip chip-job">${linkedDebt.icon||'💳'} Pays down ${linkedDebt.name}</span>`:''}</div>
         <div class="bill-meta">${billMeta(b)} · <span style="color:${pc};font-weight:600;">${pl}</span></div>
       </div>
       <div class="bill-right">
@@ -1355,11 +1362,29 @@ function renderBills() {
   }).join('')
 }
 
+// ── Bills linked to a debt ─────────────────────────
+// If a bill is "Pay Down Debt" linked, marking it paid subtracts its
+// amount for that month from the linked debt's balance. Pass reverse=true
+// to undo (e.g. un-marking as paid).
+async function applyBillDebtPayment(bill, monthYear, reverse=false) {
+  if (!bill || !bill.link_debt_id) return
+  const d = S.debts.find(x=>x.id===bill.link_debt_id)
+  if (!d) return
+  const amount = billAmount(bill, monthYear)
+  const delta = reverse ? amount : -amount
+  const newBalance = Math.max(0, Number(d.balance||0) + delta)
+  await db.from('debts').update({ balance:newBalance }).eq('id', d.id)
+  d.balance = newBalance
+}
+
 async function togglePaid(id, wasPaid, monthYear=MY) {
   if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',monthYear)
   else         await db.from('bill_payments').insert({ user_id:S.effectiveUserId, bill_id:id, month_year:monthYear })
   const { data } = await db.from('bill_payments').select('*')
-  S.payments=data??[]; renderBills(); renderSummary(); renderPaychecks(); renderReports()
+  S.payments=data??[]
+  const bill = S.bills.find(b=>b.id===id)
+  await applyBillDebtPayment(bill, monthYear, wasPaid)
+  renderAll()
 }
 
 // ── Bill modal ────────────────────────────────────
@@ -1392,21 +1417,28 @@ function openBillModal(editId, prefill) {
     document.getElementById('m-month-wrap').classList.toggle('hidden', mBillFreq!=='annually')
     document.getElementById('m-due-month').value = dueMonth || (new Date().getMonth()+1)
   }
+  // Build "Pay Down Debt" options from existing debts
+  const debtSel = document.getElementById('m-link-debt')
+  debtSel.innerHTML = '<option value="none">None</option>' + S.debts.map(d=>`<option value="${d.id}">${d.icon||'💳'} ${d.name}</option>`).join('')
+
   if (editId) {
     const b=S.bills.find(x=>x.id===editId)
     document.getElementById('m-name').value=b.name; document.getElementById('m-amount').value=b.amount
     document.getElementById('m-due').value=b.due_day||''; document.getElementById('m-due-date').value=b.due_date||''
     mPriority=b.priority||'essential'; setBillType(b.bill_type||'recurring')
     setFormCat(b.category||'Other'); setFormFreq(b.bill_frequency||'monthly', b.due_month)
+    debtSel.value = b.link_debt_id || 'none'
   } else if (prefill) {
     document.getElementById('m-name').value=prefill.name; document.getElementById('m-amount').value=prefill.amount
     document.getElementById('m-due').value=prefill.due_day||''; document.getElementById('m-due-date').value=''
     mPriority=prefill.priority||'essential'; setBillType('recurring')
     setFormCat(prefill.category||'Other'); setFormFreq('monthly')
+    debtSel.value = 'none'
   } else {
     document.getElementById('m-name').value=''; document.getElementById('m-amount').value=''
     document.getElementById('m-due').value=''; document.getElementById('m-due-date').value=''
     mPriority='essential'; setBillType('recurring'); setFormCat('Other'); setFormFreq('monthly')
+    debtSel.value = 'none'
   }
   document.querySelectorAll('.prio-btn').forEach(b=>{ b.classList.remove('on'); if(b.dataset.p===mPriority) b.classList.add('on') })
   document.getElementById('bill-overlay').classList.remove('hidden')
@@ -1418,7 +1450,8 @@ async function saveBill() {
   if (!name) return showAlert('m-alert','Enter a bill name','error')
   if (!amount||amount<=0) return showAlert('m-alert','Enter a valid amount','error')
   const cat = document.getElementById('m-cat').value || 'Other'
-  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority, bill_frequency:mBillFreq, due_month:null }
+  const linkDebtVal = document.getElementById('m-link-debt').value
+  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority, bill_frequency:mBillFreq, due_month:null, link_debt_id:linkDebtVal==='none'?null:linkDebtVal }
   if (mBillType==='recurring') {
     const due=parseInt(document.getElementById('m-due').value); if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error'); payload.due_day=due; payload.due_date=null
     if (mBillFreq==='annually') payload.due_month=parseInt(document.getElementById('m-due-month').value)||(new Date().getMonth()+1)
