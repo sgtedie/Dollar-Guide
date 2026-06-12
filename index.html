@@ -2004,6 +2004,14 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
   // off an over-budget paycheck onto an earlier one — paying a little
   // ahead of the due date, never late — largest and lowest-priority bills
   // first, until the paycheck is balanced or nothing left can be moved.
+  //
+  // Targets are restricted to paychecks on/after refStart (this displayed
+  // month). Paychecks before refStart belong to a DIFFERENT month's
+  // independent assignForMonth() call — they show g.bills=[] here simply
+  // because this month's bills weren't placed there, not because they're
+  // actually empty (their real bills live in that other month's result).
+  // Moving a bill onto one would make it vanish from every view, since
+  // neither month's render would show it.
   if (strategy==='smart') {
     for (let i=0; i<sorted.length; i++) {
       const g = map.get(sorted[i].dateStr)
@@ -2014,7 +2022,7 @@ function assignForMonth(bills, paychecks, refYear, refMonth, strategy) {
         })
         let moved = false
         for (const ab of movable) {
-          for (let j=i-1; j>=0; j--) {
+          for (let j=i-1; j>=0 && sorted[j].date>=refStart; j--) {
             const tg = map.get(sorted[j].dateStr)
             if (trueRemain(tg) >= ab.amount) {
               g.bills.splice(g.bills.indexOf(ab),1); g.totalBills-=ab.amount; g.remaining+=ab.amount
