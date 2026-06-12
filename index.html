@@ -858,6 +858,11 @@
       <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="cat2-limit" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:5px;">Leave at 0 to just track spending with no limit.</p>
     </div>
+    <div class="fg">
+      <label>Track Against (optional)</label>
+      <select id="cat2-link"></select>
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">Expenses logged here will subtract from the linked bucket's savings, or pay down the linked debt's balance.</p>
+    </div>
     <div id="cat2-alert" class="hidden" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;margin-bottom:10px;">
       <button class="btn btn-accent" style="flex:1;" onclick="saveCategory2()">Save Category</button>
@@ -1092,6 +1097,7 @@ async function loadAll() {
   S.overrides=or_.data??[]; S.buckets=bk.data??[]
   S.categories=cr.data??[]; S.expenses=er.data??[]
   S.debts=dr.data??[]; S.amountOverrides=amr.data??[]
+  await accrueDebtInterest()
 }
 function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow(); renderSpending(); renderDebts() }
 
@@ -2115,12 +2121,15 @@ function renderSpending() {
     const limit = Number(c.monthly_limit)||0
     const pct   = limit>0 ? Math.min(Math.round((spent/limit)*100),100) : 0
     const over  = limit>0 && spent>limit
+    let linkLabel = ''
+    if (c.link_type==='bucket') { const b=S.buckets.find(x=>x.id===c.link_id); if (b) linkLabel = `🪣 Pays into ${b.name}` }
+    else if (c.link_type==='debt') { const d=S.debts.find(x=>x.id===c.link_id); if (d) linkLabel = `${d.icon||'💳'} Pays down ${d.name}` }
     return `<div class="bucket-card">
       <div class="bucket-header">
         <div class="bucket-icon">${c.icon||'🛒'}</div>
         <div style="flex:1;min-width:0;">
           <div class="bucket-name">${c.name}</div>
-          <div class="bucket-detail">${limit>0?(over?'Over by $'+fmt(spent-limit):'$'+fmt(limit-spent)+' left'):'No limit set'}</div>
+          <div class="bucket-detail">${limit>0?(over?'Over by $'+fmt(spent-limit):'$'+fmt(limit-spent)+' left'):'No limit set'}${linkLabel?' · '+linkLabel:''}</div>
         </div>
         <div class="bucket-amounts">
           <div class="bucket-saved" style="color:${over?'var(--danger)':'var(--navy)'};">$${fmt(spent)}</div>
@@ -2174,14 +2183,23 @@ function openCategoryModal(editId) {
     document.getElementById('cat2-icon').value = icon
   }
 
+  // Build "Track Against" options from existing buckets/debts
+  const linkSel = document.getElementById('cat2-link')
+  let linkOpts = '<option value="none">None</option>'
+  if (S.buckets.length) linkOpts += S.buckets.map(b=>`<option value="bucket:${b.id}">🪣 ${b.name} (bucket)</option>`).join('')
+  if (S.debts.length)   linkOpts += S.debts.map(d=>`<option value="debt:${d.id}">${d.icon||'💳'} ${d.name} (debt)</option>`).join('')
+  linkSel.innerHTML = linkOpts
+
   if (editId) {
     const c = S.categories.find(x=>x.id===editId)
     document.getElementById('cat2-name').value  = c.name
     document.getElementById('cat2-limit').value = c.monthly_limit||''
+    linkSel.value = (c.link_type && c.link_type!=='none' && c.link_id) ? `${c.link_type}:${c.link_id}` : 'none'
     selectIcon(c.icon||'🛒')
   } else {
     document.getElementById('cat2-name').value=''
     document.getElementById('cat2-limit').value=''
+    linkSel.value='none'
     selectIcon('🛒')
   }
   document.getElementById('cat2-overlay').classList.remove('hidden')
@@ -2193,8 +2211,10 @@ async function saveCategory2() {
   const name  = document.getElementById('cat2-name').value.trim()
   const icon  = document.getElementById('cat2-icon').value||'🛒'
   const limit = parseFloat(document.getElementById('cat2-limit').value)||0
+  const linkVal = document.getElementById('cat2-link').value
+  const [linkType, linkId] = linkVal==='none' ? ['none', null] : linkVal.split(':')
   if (!name) return showAlert('cat2-alert','Enter a category name','error')
-  const payload = { name, icon, monthly_limit:limit }
+  const payload = { name, icon, monthly_limit:limit, link_type:linkType, link_id:linkId }
   let err
   if (id) ({ error:err }=await db.from('spending_categories').update(payload).eq('id',id))
   else    ({ error:err }=await db.from('spending_categories').insert({...payload,user_id:S.effectiveUserId}))
@@ -2228,6 +2248,28 @@ function openExpenseModal(catId) {
   setTimeout(()=>document.getElementById('exp-amount').focus(),100)
 }
 
+// ── Category links (buckets/debts) ────────────────
+// If a category is "tracked against" a bucket or debt, logging an
+// expense under it subtracts from the bucket's saved amount or pays
+// down the debt's balance. Pass reverse=true to undo (e.g. on delete).
+async function applyExpenseLink(cat, amount, reverse=false) {
+  if (!cat || cat.link_type==='none' || !cat.link_id || !amount) return
+  const delta = reverse ? Number(amount) : -Number(amount)
+  if (cat.link_type === 'bucket') {
+    const b = S.buckets.find(x=>x.id===cat.link_id)
+    if (!b) return
+    const newSaved = Math.max(0, Number(b.saved_amount||0) + delta)
+    await db.from('buckets').update({ saved_amount:newSaved }).eq('id', b.id)
+    b.saved_amount = newSaved
+  } else if (cat.link_type === 'debt') {
+    const d = S.debts.find(x=>x.id===cat.link_id)
+    if (!d) return
+    const newBalance = Math.max(0, Number(d.balance||0) + delta)
+    await db.from('debts').update({ balance:newBalance }).eq('id', d.id)
+    d.balance = newBalance
+  }
+}
+
 async function saveExpense() {
   const catId  = document.getElementById('exp-cat').value
   const amount = parseFloat(document.getElementById('exp-amount').value)
@@ -2241,18 +2283,47 @@ async function saveExpense() {
   if (err) return showAlert('exp-alert',err.message,'error')
   closeOverlay('exp-overlay')
   const { data }=await db.from('expenses').select('*').order('expense_date',{ascending:false}); S.expenses=data??[]
-  renderSpending()
+  const cat = S.categories.find(c=>c.id===catId)
+  await applyExpenseLink(cat, amount, false)
+  renderAll()
 }
 
 async function delExpense(id) {
   if (!confirm('Delete this expense?')) return
+  const exp = S.expenses.find(e=>e.id===id)
   await db.from('expenses').delete().eq('id',id)
   S.expenses=S.expenses.filter(e=>e.id!==id)
-  renderSpending()
+  if (exp) {
+    const cat = S.categories.find(c=>c.id===exp.category_id)
+    await applyExpenseLink(cat, Number(exp.amount), true)
+  }
+  renderAll()
 }
 
 // ── Debt Payoff Tracker ───────────────────────────
 let debtExtra = 0
+
+// Accrue monthly interest on each debt (balance * APR/12), compounding for
+// however many calendar months have passed since last_accrued. Runs once
+// per month at most — last_accrued is bumped to the current month after.
+async function accrueDebtInterest() {
+  const curKey = NOW.getFullYear()*12 + NOW.getMonth()
+  const curMonthStart = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-01`
+  for (const d of S.debts) {
+    const last = d.last_accrued ? parseD(d.last_accrued) : NOW
+    const lastKey = last.getFullYear()*12 + last.getMonth()
+    const monthsElapsed = curKey - lastKey
+    if (monthsElapsed <= 0) continue
+    let balance = Number(d.balance)||0
+    if (balance > 0) {
+      const rate = (Number(d.apr)||0)/100/12
+      for (let i=0; i<monthsElapsed; i++) balance += balance*rate
+      balance = Math.round(balance*100)/100
+    }
+    await db.from('debts').update({ balance, last_accrued:curMonthStart }).eq('id', d.id)
+    d.balance = balance; d.last_accrued = curMonthStart
+  }
+}
 
 // Months to pay off a single balance at a fixed monthly payment (amortization)
 function debtMonthsToPayoff(balance, apr, payment) {
@@ -2415,7 +2486,10 @@ async function saveDebt() {
   const minPay  = parseFloat(document.getElementById('debt-min').value)||0
   if (!name) return showAlert('debt-alert','Enter a name for this debt','error')
   if (balance<=0) return showAlert('debt-alert','Enter the current balance','error')
-  const payload = { name, icon, balance, apr, min_payment:minPay }
+  // Reset the interest-accrual clock so we don't re-apply interest the
+  // user has already accounted for in this manually-entered balance.
+  const lastAccrued = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-01`
+  const payload = { name, icon, balance, apr, min_payment:minPay, last_accrued:lastAccrued }
   let err
   if (id) ({ error:err }=await db.from('debts').update(payload).eq('id',id))
   else    ({ error:err }=await db.from('debts').insert({...payload,user_id:S.effectiveUserId}))
