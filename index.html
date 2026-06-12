@@ -1200,7 +1200,19 @@ function renderPaychecks() {
     const isPast=g.paycheck.date.getTime()<todayMs
     const isNext=!isPast&&!foundNext; if(isNext) foundNext=true
     const isContext=false
-    const over=g.remaining<0, pct=Math.min((g.totalBills/g.paycheck.netAmount)*100,100)
+
+    // Spending tab expenses logged during this paycheck's pay period (its
+    // pay date up to the day before the next paycheck's pay date) also
+    // count against the "left" amount, alongside bills.
+    const pcIdx = allPc.findIndex(p=>p.dateStr===g.paycheck.dateStr)
+    const nextPcDate = pcIdx>=0 && allPc[pcIdx+1] ? allPc[pcIdx+1].date : null
+    const totalSpent = S.expenses.reduce((s,e)=>{
+      const d = parseD(e.expense_date)
+      return (d>=g.paycheck.date && (!nextPcDate || d<nextPcDate)) ? s+Number(e.amount) : s
+    },0)
+    const remaining = g.remaining - totalSpent
+
+    const over=remaining<0, pct=Math.min(((g.totalBills+totalSpent)/g.paycheck.netAmount)*100,100)
     const srcLabel=S.schedules.length>1&&g.paycheck.schedName?`<span class="chip chip-job">${g.paycheck.schedName}</span>`:''
 
     const rows=g.bills.map(ab => {
@@ -1239,19 +1251,19 @@ function renderPaychecks() {
           ${isNext?'<span class="chip chip-next">▶ Next Paycheck</span><br>':''}
           ${isPast&&!isContext?'<span class="chip chip-past">Past</span><br>':''}
           <div class="pc-date">${g.paycheck.label} ${srcLabel}</div>
-          <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due</div>
+          <div class="pc-meta">${g.bills.length} bill${g.bills.length!==1?'s':''} · $${fmt(g.totalBills)} due${totalSpent>0?` · $${fmt(totalSpent)} spent`:''}</div>
         </div>
         <div class="pc-right">
           <div class="pc-amount">$${fmt(g.paycheck.netAmount)}</div>
-          <div class="pc-rem ${over?'c-danger':'c-success'}">$${fmt(g.remaining)} left</div>
+          <div class="pc-rem ${over?'c-danger':'c-success'}">$${fmt(remaining)} left</div>
         </div>
       </div>
       <div class="pc-body" style="display:${isNext||(!isPast&&!isContext)?'block':'none'}">
         ${rows}
         <div class="prog-wrap">
-          <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
+          <div class="prog-labels"><span>Bills $${fmt(g.totalBills)}${totalSpent>0?' + Spending $'+fmt(totalSpent):''}</span><span>Paycheck $${fmt(g.paycheck.netAmount)}</span></div>
           <div class="prog-bg"><div class="prog-fill ${over?'over':''}" style="width:${pct}%"></div></div>
-          ${over?`<div class="over-msg">⚠ Over budget by $${fmt(Math.abs(g.remaining))}</div>`:''}
+          ${over?`<div class="over-msg">⚠ Over budget by $${fmt(Math.abs(remaining))}</div>`:''}
         </div>
       </div>
     </div>`
