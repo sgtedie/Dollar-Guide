@@ -217,6 +217,16 @@
     .stat-row:last-child{border-bottom:none}
     .stat-label{color:var(--muted)}.stat-val{font-weight:700}
 
+    /* ── Annual bills calendar ── */
+    .annual-cal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .annual-cal-month{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;min-height:58px}
+    .annual-cal-month.cur{border-color:var(--accent)}
+    .annual-cal-month.empty{opacity:.5}
+    .annual-cal-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px}
+    .annual-cal-bill{display:flex;justify-content:space-between;gap:6px;font-size:12px;font-weight:600;padding:2px 0}
+    .annual-cal-bill span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .annual-cal-none{font-size:12px;color:var(--muted)}
+
     /* ── Settings ── */
     .setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
     .setting-row:last-child{border-bottom:none}
@@ -386,6 +396,10 @@
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       Bills
     </button>
+    <button class="tab-item" id="nb-spending" onclick="goPage('spending')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 10-8 0v4M5 9h14l1.35 11.18A2 2 0 0118.36 22H5.64a2 2 0 01-1.99-1.82L5 9z"/></svg>
+      Spending
+    </button>
     <button class="tab-item" id="nb-paychecks" onclick="goPage('paychecks')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       Paychecks
@@ -393,6 +407,10 @@
     <button class="tab-item" id="nb-buckets" onclick="goPage('buckets')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
       Buckets
+    </button>
+    <button class="tab-item" id="nb-debts" onclick="goPage('debts')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M2 10h20M6 15h4"/></svg>
+      Debts
     </button>
     <button class="tab-item" id="nb-reports" onclick="goPage('reports')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -453,6 +471,30 @@
       <div id="bills-list"></div>
     </div>
 
+    <!-- ── SPENDING ── -->
+    <div class="page" id="pg-spending">
+      <div class="sec-header">
+        <span class="sec-title">Spending</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-outline" onclick="openCategoryModal()">+ Category</button>
+          <button class="btn btn-accent btn-sm" onclick="openExpenseModal()">+ Expense</button>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Track everyday spending against monthly limits per category — groceries, gas, eating out, and more.</p>
+      <div class="pc-month-nav" id="sp-month-nav">
+        <button class="pc-nav-btn" onclick="shiftSpMonth(-1)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <span class="pc-nav-label" id="sp-nav-label">June 2026</span>
+        <button class="pc-nav-btn" onclick="shiftSpMonth(1)">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div id="sp-summary" style="margin-bottom:16px;"></div>
+      <div id="sp-categories"></div>
+      <div id="sp-expenses" style="margin-top:8px;"></div>
+    </div>
+
     <!-- ── PAYCHECKS ── -->
     <div class="page" id="pg-paychecks">
       <div class="sec-header">
@@ -472,6 +514,17 @@
       <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Set money aside for goals. Contributions are deducted from your available income each month.</p>
       <div id="buckets-summary" style="margin-bottom:16px;"></div>
       <div id="buckets-list"></div>
+    </div>
+
+    <!-- ── DEBTS ── -->
+    <div class="page" id="pg-debts">
+      <div class="sec-header">
+        <span class="sec-title">Debts</span>
+        <button class="btn btn-accent btn-sm" onclick="openDebtModal()">+ Add Debt</button>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5;">Track credit cards and loans — see when you'll be debt-free and how extra payments speed it up.</p>
+      <div id="debts-summary" style="margin-bottom:16px;"></div>
+      <div id="debts-list"></div>
     </div>
 
     <!-- ── REPORTS ── -->
@@ -604,6 +657,23 @@
         <button class="freq-mini-btn" data-f="annually"  onclick="setBillFreq(this)">Annually</button>
       </div>
       <div class="freq-preview" id="m-freq-preview">Repeats every month</div>
+    </div>
+    <div class="fg hidden" id="m-month-wrap">
+      <label>Which month is it due?</label>
+      <select id="m-due-month">
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
     </div>
     <div class="fg">
       <label>Priority</label>
@@ -740,6 +810,130 @@
   </div>
 </div>
 
+<!-- ══ CATEGORY MODAL ══ -->
+<div class="overlay hidden" id="cat2-overlay" onclick="overlayClick(event,'cat2-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="cat2-modal-title">Add Category</div>
+    <input type="hidden" id="cat2-id">
+    <div class="fg">
+      <label>Category Name</label>
+      <input type="text" id="cat2-name" placeholder="e.g. Groceries, Gas, Dining Out">
+    </div>
+    <div class="fg">
+      <label>Choose an Icon</label>
+      <div class="icon-picker" id="cat2-icon-picker">
+        <button class="icon-opt on" data-i="🛒" onclick="setCat2Icon(this)" title="Groceries">🛒</button>
+        <button class="icon-opt" data-i="⛽" onclick="setCat2Icon(this)" title="Gas">⛽</button>
+        <button class="icon-opt" data-i="🍽️" onclick="setCat2Icon(this)" title="Dining Out">🍽️</button>
+        <button class="icon-opt" data-i="☕" onclick="setCat2Icon(this)" title="Coffee">☕</button>
+        <button class="icon-opt" data-i="🎬" onclick="setCat2Icon(this)" title="Entertainment">🎬</button>
+        <button class="icon-opt" data-i="👕" onclick="setCat2Icon(this)" title="Clothing">👕</button>
+        <button class="icon-opt" data-i="💇" onclick="setCat2Icon(this)" title="Personal Care">💇</button>
+        <button class="icon-opt" data-i="🎁" onclick="setCat2Icon(this)" title="Gifts">🎁</button>
+        <button class="icon-opt" data-i="🐾" onclick="setCat2Icon(this)" title="Pets">🐾</button>
+        <button class="icon-opt" data-i="🧒" onclick="setCat2Icon(this)" title="Kids">🧒</button>
+        <button class="icon-opt" data-i="🏥" onclick="setCat2Icon(this)" title="Medical">🏥</button>
+        <button class="icon-opt" data-i="🎓" onclick="setCat2Icon(this)" title="Education">🎓</button>
+        <button class="icon-opt" data-i="🏋️" onclick="setCat2Icon(this)" title="Fitness">🏋️</button>
+        <button class="icon-opt" data-i="🏠" onclick="setCat2Icon(this)" title="Home">🏠</button>
+        <button class="icon-opt" data-i="🚗" onclick="setCat2Icon(this)" title="Auto">🚗</button>
+        <button class="icon-opt" data-i="🎉" onclick="setCat2Icon(this)" title="Fun / Misc">🎉</button>
+        <button class="icon-opt" data-i="📱" onclick="setCat2Icon(this)" title="Tech">📱</button>
+        <button class="icon-opt" data-i="📦" onclick="setCat2Icon(this)" title="Other">📦</button>
+      </div>
+      <input type="hidden" id="cat2-icon" value="🛒">
+    </div>
+    <div class="fg">
+      <label>Monthly Budget Limit</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="cat2-limit" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:5px;">Leave at 0 to just track spending with no limit.</p>
+    </div>
+    <div id="cat2-alert" class="hidden" style="margin-bottom:14px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-accent" style="flex:1;" onclick="saveCategory2()">Save Category</button>
+      <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('cat2-overlay')">Cancel</button>
+    </div>
+    <button class="btn btn-danger hidden" id="cat2-delete-btn" onclick="deleteCategory2()">Delete Category</button>
+  </div>
+</div>
+
+<!-- ══ EXPENSE MODAL ══ -->
+<div class="overlay hidden" id="exp-overlay" onclick="overlayClick(event,'exp-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Expense</div>
+    <div class="fg">
+      <label>Category</label>
+      <select id="exp-cat"></select>
+    </div>
+    <div class="fg">
+      <label>Amount</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="exp-amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div class="fg">
+      <label>Description (optional)</label>
+      <input type="text" id="exp-desc" placeholder="e.g. Walmart, gas station">
+    </div>
+    <div class="fg">
+      <label>Date</label>
+      <input type="date" id="exp-date">
+    </div>
+    <div id="exp-alert" class="hidden" style="margin-bottom:14px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-accent" style="flex:1;" onclick="saveExpense()">Save Expense</button>
+      <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('exp-overlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DEBT MODAL ══ -->
+<div class="overlay hidden" id="debt-overlay" onclick="overlayClick(event,'debt-overlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="debt-modal-title">Add Debt</div>
+    <input type="hidden" id="debt-id">
+    <div class="fg">
+      <label>Name</label>
+      <input type="text" id="debt-name" placeholder="e.g. Visa Card, Car Loan, Student Loan">
+    </div>
+    <div class="fg">
+      <label>Choose an Icon</label>
+      <div class="icon-picker" id="debt-icon-picker">
+        <button class="icon-opt on" data-i="💳" onclick="setDebtIcon(this)" title="Credit Card">💳</button>
+        <button class="icon-opt" data-i="🏦" onclick="setDebtIcon(this)" title="Personal Loan">🏦</button>
+        <button class="icon-opt" data-i="🚗" onclick="setDebtIcon(this)" title="Auto Loan">🚗</button>
+        <button class="icon-opt" data-i="🎓" onclick="setDebtIcon(this)" title="Student Loan">🎓</button>
+        <button class="icon-opt" data-i="🏠" onclick="setDebtIcon(this)" title="Mortgage / HELOC">🏠</button>
+        <button class="icon-opt" data-i="🏥" onclick="setDebtIcon(this)" title="Medical">🏥</button>
+        <button class="icon-opt" data-i="📱" onclick="setDebtIcon(this)" title="Tech / Device">📱</button>
+        <button class="icon-opt" data-i="📦" onclick="setDebtIcon(this)" title="Other">📦</button>
+      </div>
+      <input type="hidden" id="debt-icon" value="💳">
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>Current Balance</label>
+        <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="debt-balance" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="fg">
+        <label>Interest Rate (APR %)</label>
+        <input type="number" id="debt-apr" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Minimum Monthly Payment</label>
+      <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="debt-min" placeholder="0.00" min="0" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div id="debt-alert" class="hidden" style="margin-bottom:14px;"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-accent" style="flex:1;" onclick="saveDebt()">Save Debt</button>
+      <button class="btn btn-gray" style="flex:1;" onclick="closeOverlay('debt-overlay')">Cancel</button>
+    </div>
+    <button class="btn btn-danger hidden" id="debt-delete-btn" onclick="deleteDebt()">Delete Debt</button>
+  </div>
+</div>
+
 <!-- ══ REASSIGN MODAL ══ -->
 <div class="overlay hidden" id="reassign-overlay" onclick="overlayClick(event,'reassign-overlay')">
   <div class="modal">
@@ -787,12 +981,15 @@ const TEMPLATES = {
   Food:         [{ name:'Groceries', amount:400, due_day:1, category:'Food', priority:'essential' }],
 }
 
-const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], buckets:[], strategy:'smart', authMode:'login' }
+const S = { user:null, effectiveUserId:null, isSecondary:false, bills:[], schedules:[], payments:[], overrides:[], buckets:[], categories:[], expenses:[], debts:[], strategy:'smart', authMode:'login' }
 let pcPage = 0   // month offset from current: 0 = this month, -1 = last, +1 = next
+let spPage = 0   // month offset for Spending tab
 
 function shiftPcMonth(dir) { pcPage += dir; renderPaychecks() }
+function shiftSpMonth(dir) { spPage += dir; renderSpending() }
 const NOW = new Date()
 const MY  = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}`
+function paidSetFor(my) { return new Set(S.payments.filter(p=>p.month_year===my).map(p=>p.bill_id)) }
 
 // ── Boot ──────────────────────────────────────────
 async function boot() {
@@ -839,21 +1036,26 @@ function showApp()  { document.getElementById('auth-screen').style.display='none
 
 // ── Load ──────────────────────────────────────────
 async function loadAll() {
-  const [br, sr, pr, or_, bk] = await Promise.all([
+  const [br, sr, pr, or_, bk, cr, er, dr] = await Promise.all([
     db.from('bills').select('*').eq('is_active', true).order('due_day'),
     db.from('pay_schedule').select('*').order('created_at'),
-    db.from('bill_payments').select('*').eq('month_year', MY),
+    db.from('bill_payments').select('*'),
     db.from('bill_assignments').select('*').eq('month_year', MY),
     db.from('buckets').select('*').order('created_at'),
+    db.from('spending_categories').select('*').order('created_at'),
+    db.from('expenses').select('*').order('expense_date', { ascending: false }),
+    db.from('debts').select('*').order('created_at'),
   ])
   S.bills=br.data??[]; S.schedules=sr.data??[]; S.payments=pr.data??[]
   S.overrides=or_.data??[]; S.buckets=bk.data??[]
+  S.categories=cr.data??[]; S.expenses=er.data??[]
+  S.debts=dr.data??[]
 }
-function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow() }
+function renderAll() { renderSummary(); renderPaychecks(); renderBills(); renderSchedList(); renderReports(); renderBuckets(); renderCashFlow(); renderSpending(); renderDebts() }
 
 // ── Summary cards ─────────────────────────────────
 function renderSummary() {
-  const paidSet    = new Set(S.payments.map(p => p.bill_id))
+  const paidSet    = paidSetFor(MY)
   const totalBills = S.bills.reduce((s,b) => s+b.amount, 0)
   const paidAmt    = S.bills.filter(b => paidSet.has(b.id)).reduce((s,b) => s+b.amount, 0)
   const stillOwed  = totalBills - paidAmt
@@ -918,6 +1120,7 @@ function renderPaychecks() {
   // Reference month based on navigation offset
   const refDate = new Date(NOW.getFullYear(), NOW.getMonth() + pcPage, 1)
   const refY=refDate.getFullYear(), refM=refDate.getMonth()
+  const refMY=`${refY}-${String(refM+1).padStart(2,'0')}`
 
   // Generate paychecks across a wide window so prev-month paychecks are available
   const allPc = S.schedules.flatMap(s => genPayDates(s, pcPage + 4)); allPc.sort((a,b)=>a.date-b.date)
@@ -942,7 +1145,7 @@ function renderPaychecks() {
     el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No paycheck data for this period.<br>Use the arrows to navigate.</div></div>`; return
   }
 
-  const paidSet=new Set(S.payments.map(p=>p.bill_id)), todayMs=new Date().setHours(0,0,0,0)
+  const paidSet=paidSetFor(refMY), todayMs=new Date().setHours(0,0,0,0)
   let foundNext=false
 
   el.innerHTML = window.map(g => {
@@ -957,6 +1160,7 @@ function renderPaychecks() {
       const isOverridden=S.overrides.some(o=>o.bill_id===ab.bill.id)
       return `<div class="pc-bill-row" style="${paid?'opacity:.4;text-decoration:line-through':''}">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+          <button class="check-circle ${paid?'on':''}" style="width:22px;height:22px;margin-top:1px;" onclick="togglePaid('${ab.bill.id}',${paid},'${refMY}')" title="Mark as paid">${paid?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`:''}</button>
           <span style="width:8px;height:8px;border-radius:50%;background:${pc};flex-shrink:0;margin-top:4px;display:inline-block;"></span>
           <div>
             <div class="pc-bill-name">${ab.bill.name}${isOverridden?'<span style="font-size:9px;background:var(--blue-bg);color:var(--navy);padding:1px 5px;border-radius:99px;margin-left:4px;font-weight:700;">Manual</span>':''}</div>
@@ -1046,7 +1250,7 @@ function renderCashFlow() {
 
 // ── Bills ─────────────────────────────────────────
 function renderBills() {
-  const el=document.getElementById('bills-list'), paidSet=new Set(S.payments.map(p=>p.bill_id))
+  const el=document.getElementById('bills-list'), paidSet=paidSetFor(MY)
   if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No bills yet. Add your first bill or browse templates.</div><button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openTemplates()">Browse Templates</button></div>`; return }
   const sorted=[...S.bills].sort((a,b) => { const po=(PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0); return po!==0?po:(a.due_day||99)-(b.due_day||99) })
   el.innerHTML=sorted.map(b => {
@@ -1068,10 +1272,10 @@ function renderBills() {
   }).join('')
 }
 
-async function togglePaid(id, wasPaid) {
-  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',MY)
-  else         await db.from('bill_payments').insert({ user_id:S.user.id, bill_id:id, month_year:MY })
-  const { data } = await db.from('bill_payments').select('*').eq('month_year',MY)
+async function togglePaid(id, wasPaid, monthYear=MY) {
+  if (wasPaid) await db.from('bill_payments').delete().eq('bill_id',id).eq('month_year',monthYear)
+  else         await db.from('bill_payments').insert({ user_id:S.effectiveUserId, bill_id:id, month_year:monthYear })
+  const { data } = await db.from('bill_payments').select('*')
   S.payments=data??[]; renderBills(); renderSummary(); renderPaychecks(); renderReports()
 }
 
@@ -1097,18 +1301,20 @@ function openBillModal(editId, prefill) {
     document.querySelectorAll('.cat-opt').forEach(b=>{ b.classList.remove('on'); if(b.dataset.c===cat) b.classList.add('on') })
     document.getElementById('m-cat').value = cat
   }
-  const setFormFreq = (freq) => {
+  const setFormFreq = (freq, dueMonth) => {
     mBillFreq = freq||'monthly'
     document.querySelectorAll('.freq-mini-btn').forEach(b=>{ b.classList.remove('on'); if(b.dataset.f===mBillFreq) b.classList.add('on') })
     const prev = document.getElementById('m-freq-preview')
     if(prev) prev.textContent = FREQ_PREVIEWS[mBillFreq]||''
+    document.getElementById('m-month-wrap').classList.toggle('hidden', mBillFreq!=='annually')
+    document.getElementById('m-due-month').value = dueMonth || (new Date().getMonth()+1)
   }
   if (editId) {
     const b=S.bills.find(x=>x.id===editId)
     document.getElementById('m-name').value=b.name; document.getElementById('m-amount').value=b.amount
     document.getElementById('m-due').value=b.due_day||''; document.getElementById('m-due-date').value=b.due_date||''
     mPriority=b.priority||'essential'; setBillType(b.bill_type||'recurring')
-    setFormCat(b.category||'Other'); setFormFreq(b.bill_frequency||'monthly')
+    setFormCat(b.category||'Other'); setFormFreq(b.bill_frequency||'monthly', b.due_month)
   } else if (prefill) {
     document.getElementById('m-name').value=prefill.name; document.getElementById('m-amount').value=prefill.amount
     document.getElementById('m-due').value=prefill.due_day||''; document.getElementById('m-due-date').value=''
@@ -1129,8 +1335,11 @@ async function saveBill() {
   if (!name) return showAlert('m-alert','Enter a bill name','error')
   if (!amount||amount<=0) return showAlert('m-alert','Enter a valid amount','error')
   const cat = document.getElementById('m-cat').value || 'Other'
-  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority, bill_frequency:mBillFreq }
-  if (mBillType==='recurring') { const due=parseInt(document.getElementById('m-due').value); if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error'); payload.due_day=due; payload.due_date=null }
+  let payload={ name, amount, category:cat, bill_type:mBillType, priority:mPriority, bill_frequency:mBillFreq, due_month:null }
+  if (mBillType==='recurring') {
+    const due=parseInt(document.getElementById('m-due').value); if (!due||due<1||due>31) return showAlert('m-alert','Due day must be 1–31','error'); payload.due_day=due; payload.due_date=null
+    if (mBillFreq==='annually') payload.due_month=parseInt(document.getElementById('m-due-month').value)||(new Date().getMonth()+1)
+  }
   else { const dueDate=document.getElementById('m-due-date').value; if (!dueDate) return showAlert('m-alert','Select a due date','error'); payload.due_date=dueDate; payload.due_day=null }
   let err
   if (id) ({ error:err }=await db.from('bills').update(payload).eq('id',id))
@@ -1207,7 +1416,7 @@ function renderReports() {
   const el=document.getElementById('reports-content')
   if (!S.bills.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Add bills to see reports.</div></div>`; return }
 
-  const paidSet=new Set(S.payments.map(p=>p.bill_id))
+  const paidSet=paidSetFor(MY)
   const totalBills=S.bills.reduce((s,b)=>s+b.amount,0)
   const paidAmt=S.bills.filter(b=>paidSet.has(b.id)).reduce((s,b)=>s+b.amount,0)
   const unpaidAmt=totalBills-paidAmt
@@ -1242,6 +1451,7 @@ function renderReports() {
   const sortedBills=[...S.bills].sort((a,b)=>(PRIO_ORDER[a.priority||'essential']||0)-(PRIO_ORDER[b.priority||'essential']||0))
   const groups = smartAssign(sortedBills,allPc,2)
   const barSvg = buildBarChart(upcomingPc, groups)
+  const annualCalHtml = buildAnnualCalendar(today)
 
   el.innerHTML = `
     <div class="report-card">
@@ -1249,9 +1459,11 @@ function renderReports() {
       <div class="stat-row"><span class="stat-label">Total bills</span><span class="stat-val">$${fmt(totalBills)}</span></div>
       <div class="stat-row"><span class="stat-label">Paid so far</span><span class="stat-val" style="color:var(--success);">$${fmt(paidAmt)}</span></div>
       <div class="stat-row"><span class="stat-label">Still owed</span><span class="stat-val" style="color:${unpaidAmt>0?'var(--amber)':'var(--success)}'};">$${fmt(unpaidAmt)}</span></div>
-      <div class="stat-row"><span class="stat-label">Bills paid</span><span class="stat-val">${S.payments.length} of ${S.bills.length}</span></div>
+      <div class="stat-row"><span class="stat-label">Bills paid</span><span class="stat-val">${paidSet.size} of ${S.bills.length}</span></div>
       ${monthIncome>0?`<div class="stat-row"><span class="stat-label">Free &amp; clear</span><span class="stat-val" style="color:${freeAmt>=0?'var(--success)':'var(--danger)}'};">$${fmt(freeAmt)}</span></div>`:''}
     </div>
+
+    ${annualCalHtml}
 
     ${monthIncome>0?`<div class="report-card">
       <div class="report-title">Income Allocation</div>
@@ -1290,6 +1502,42 @@ function renderReports() {
           <div class="cat-amt">$${fmt(byPrio[k])}</div>
         </div>`).join('')}
     </div>`
+}
+
+// ── Annual Bills Calendar ─────────────────────────
+// Surfaces irregular bills (quarterly, annual, one-time) across the next 12
+// months so renewals like insurance or registration fees don't sneak up.
+function buildAnnualCalendar(today) {
+  const irregular = S.bills.filter(b => b.bill_type==='single' || ['quarterly','annually'].includes(b.bill_frequency))
+  if (!irregular.length) return ''
+
+  const yearEnd = addM(today, 12)
+  const months = []
+  for (let i=0;i<12;i++){
+    const mDate = new Date(today.getFullYear(), today.getMonth()+i, 1)
+    months.push({ label: mDate.toLocaleDateString('en-US',{month:'short',year:'numeric'}), y:mDate.getFullYear(), m:mDate.getMonth(), bills:[], cur:i===0 })
+  }
+
+  irregular.forEach(b => {
+    dueDates(b, today, yearEnd).forEach(d => {
+      const mo = months.find(x=>x.y===d.getFullYear() && x.m===d.getMonth())
+      if (mo) mo.bills.push({ name:b.name, amount:Number(b.amount), category:b.category })
+    })
+  })
+
+  const totalAmt = months.reduce((s,mo)=>s+mo.bills.reduce((ss,x)=>ss+x.amount,0),0)
+
+  return `<div class="report-card">
+    <div class="report-title">Annual Bills Calendar</div>
+    <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">Quarterly, annual, and one-time bills due over the next 12 months — $${fmt(totalAmt)} total</p>
+    <div class="annual-cal-grid">
+      ${months.map(mo=>`
+        <div class="annual-cal-month ${mo.cur?'cur':''} ${mo.bills.length?'':'empty'}">
+          <div class="annual-cal-label">${mo.label}${mo.cur?' · now':''}</div>
+          ${mo.bills.length ? mo.bills.map(x=>`<div class="annual-cal-bill" title="${x.name} · $${fmt(x.amount)}"><span>${CAT_ICON[x.category]||'📦'} ${x.name}</span><span>$${fmt(x.amount)}</span></div>`).join('') : '<div class="annual-cal-none">—</div>'}
+        </div>`).join('')}
+    </div>
+  </div>`
 }
 
 // ── SVG chart builders ────────────────────────────
@@ -1375,9 +1623,25 @@ async function loadSampleData() {
     { user_id:uid, name:'Netflix',         amount:18,   due_day:1,  category:'Subscriptions', bill_type:'recurring', priority:'optional',  is_active:true },
     { user_id:uid, name:'Groceries',       amount:400,  due_day:1,  category:'Food',          bill_type:'recurring', priority:'essential', is_active:true },
     { user_id:uid, name:'Cell Phone',      amount:80,   due_day:10, category:'Utilities',     bill_type:'recurring', priority:'important', is_active:true },
+    { user_id:uid, name:'Car Registration', amount:180,  due_day:15, due_month:((new Date().getMonth()+3)%12)+1, category:'Transport', bill_type:'recurring', bill_frequency:'annually', priority:'important', is_active:true },
   ]
   const d=new Date(),diff=(5-d.getDay()+7)%7||7; d.setDate(d.getDate()+diff)
-  await Promise.all([db.from('bills').insert(sampleBills), db.from('pay_schedule').insert({ user_id:uid, name:'Main Job', frequency:'biweekly', amount:2100, next_pay_date:d.toISOString().split('T')[0], custom_days:null })])
+  const sampleCategories=[
+    { user_id:S.effectiveUserId, name:'Groceries',     icon:'🛒', monthly_limit:400 },
+    { user_id:S.effectiveUserId, name:'Gas',           icon:'⛽', monthly_limit:150 },
+    { user_id:S.effectiveUserId, name:'Dining Out',    icon:'🍽️', monthly_limit:100 },
+    { user_id:S.effectiveUserId, name:'Entertainment', icon:'🎬', monthly_limit:50 },
+  ]
+  const sampleDebts=[
+    { user_id:S.effectiveUserId, name:'Visa Card',  icon:'💳', balance:3200, apr:22.99, min_payment:90 },
+    { user_id:S.effectiveUserId, name:'Car Loan',   icon:'🚗', balance:14500, apr:6.5,  min_payment:320 },
+  ]
+  await Promise.all([
+    db.from('bills').insert(sampleBills),
+    db.from('pay_schedule').insert({ user_id:uid, name:'Main Job', frequency:'biweekly', amount:2100, next_pay_date:d.toISOString().split('T')[0], custom_days:null }),
+    db.from('spending_categories').insert(sampleCategories),
+    db.from('debts').insert(sampleDebts),
+  ])
   await loadAll(); renderAll()
 }
 
@@ -1390,6 +1654,8 @@ function goPage(p) {
   document.getElementById('hdr-slogan').style.display=p==='dashboard'?'block':'none'
   if (p==='reports') renderReports()
   if (p==='buckets') renderBuckets()
+  if (p==='spending') renderSpending()
+  if (p==='debts') renderDebts()
   if (p==='settings') { document.getElementById('settings-email').textContent=S.user?.email||'—'; loadReminderSettings(); renderSharingUI() }
 }
 
@@ -1419,6 +1685,7 @@ function setBillFreq(btn) {
   document.querySelectorAll('.freq-mini-btn').forEach(b=>b.classList.remove('on'))
   btn.classList.add('on')
   document.getElementById('m-freq-preview').textContent = FREQ_PREVIEWS[mBillFreq] || ''
+  document.getElementById('m-month-wrap').classList.toggle('hidden', mBillFreq!=='annually')
 }
 
 // ── Paycheck income preview ────────────────────────
@@ -1720,6 +1987,368 @@ async function deleteBucketById(id,fromModal=false) {
   renderBuckets(); renderSummary()
 }
 
+// ── Spending / Category Budgets ───────────────────
+function renderSpending() {
+  const catEl = document.getElementById('sp-categories')
+  const expEl = document.getElementById('sp-expenses')
+  const sumEl = document.getElementById('sp-summary')
+  if (!catEl) return
+
+  const refDate = new Date(NOW.getFullYear(), NOW.getMonth()+spPage, 1)
+  const refY = refDate.getFullYear(), refM = refDate.getMonth()
+  document.getElementById('sp-nav-label').textContent = refDate.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+
+  const monthExp = S.expenses.filter(e=>{ const d=parseD(e.expense_date); return d.getFullYear()===refY && d.getMonth()===refM })
+  const totalSpent  = monthExp.reduce((s,e)=>s+Number(e.amount),0)
+  const totalBudget = S.categories.reduce((s,c)=>s+Number(c.monthly_limit),0)
+  const overBudget  = totalBudget>0 && totalSpent>totalBudget
+
+  sumEl.innerHTML = `
+    <div class="dash-grid" style="margin-bottom:0;">
+      <div class="dash-card dash-card-accent">
+        <div class="dash-label">Total Spent</div>
+        <div class="dash-value c-accent">$${fmt(totalSpent)}</div>
+        <div class="dash-sub">${monthExp.length} expense${monthExp.length!==1?'s':''} logged</div>
+      </div>
+      <div class="dash-card ${totalBudget>0?'dash-card-success':''}">
+        <div class="dash-label">Monthly Budget</div>
+        <div class="dash-value ${totalBudget>0?(overBudget?'c-danger':'c-success'):''}">${totalBudget>0?'$'+fmt(totalBudget):'—'}</div>
+        <div class="dash-sub">${totalBudget>0?(overBudget?'Over by $'+fmt(totalSpent-totalBudget):'$'+fmt(totalBudget-totalSpent)+' remaining'):'Set category limits below'}</div>
+      </div>
+    </div>`
+
+  if (!S.categories.length) {
+    catEl.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">No spending categories yet.<br>Add categories like Groceries, Gas, or Dining Out to start tracking everyday spending.</div><button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openCategoryModal()">+ Add Category</button></div>`
+    expEl.innerHTML = ''
+    return
+  }
+
+  catEl.innerHTML = S.categories.map(c=>{
+    const spent = monthExp.filter(e=>e.category_id===c.id).reduce((s,e)=>s+Number(e.amount),0)
+    const limit = Number(c.monthly_limit)||0
+    const pct   = limit>0 ? Math.min(Math.round((spent/limit)*100),100) : 0
+    const over  = limit>0 && spent>limit
+    return `<div class="bucket-card">
+      <div class="bucket-header">
+        <div class="bucket-icon">${c.icon||'🛒'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="bucket-name">${c.name}</div>
+          <div class="bucket-detail">${limit>0?(over?'Over by $'+fmt(spent-limit):'$'+fmt(limit-spent)+' left'):'No limit set'}</div>
+        </div>
+        <div class="bucket-amounts">
+          <div class="bucket-saved" style="color:${over?'var(--danger)':'var(--navy)'};">$${fmt(spent)}</div>
+          <div class="bucket-goal">${limit>0?'of $'+fmt(limit):''}</div>
+        </div>
+      </div>
+      ${limit>0?`<div class="prog-bg" style="margin-bottom:10px;"><div class="prog-fill ${over?'over':''}" style="width:${pct}%"></div></div>`:''}
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="btn btn-accent btn-sm" style="flex:1;" onclick="openExpenseModal('${c.id}')">+ Expense</button>
+        <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openCategoryModal('${c.id}')">Edit</button>
+      </div>
+    </div>`
+  }).join('')
+
+  const sortedExp = [...monthExp].sort((a,b)=> b.expense_date.localeCompare(a.expense_date) || (b.created_at||'').localeCompare(a.created_at||''))
+  expEl.innerHTML = `<div class="report-card">
+    <div class="report-title">Recent Expenses</div>
+    ${sortedExp.length ? sortedExp.slice(0,25).map(e=>{
+      const cat = S.categories.find(c=>c.id===e.category_id)
+      return `<div class="pc-bill-row">
+        <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+          <span style="font-size:18px;flex-shrink:0;">${cat?.icon||'📦'}</span>
+          <div style="min-width:0;">
+            <div class="pc-bill-name">${e.description||cat?.name||'Expense'}</div>
+            <div class="pc-bill-due">${cat?.name||'Uncategorized'} · ${fmtD(parseD(e.expense_date))}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <div class="pc-bill-amt">$${fmt(e.amount)}</div>
+          <button class="iBtn del" onclick="delExpense('${e.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+        </div>
+      </div>`
+    }).join('') : '<p style="color:var(--muted);font-size:13px;padding:8px 0;">No expenses logged yet this month.</p>'}
+  </div>`
+}
+
+function setCat2Icon(btn) {
+  document.querySelectorAll('#cat2-icon-picker .icon-opt').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  document.getElementById('cat2-icon').value = btn.dataset.i
+}
+
+function openCategoryModal(editId) {
+  clearAlert('cat2-alert')
+  document.getElementById('cat2-id').value = editId||''
+  document.getElementById('cat2-modal-title').textContent = editId ? 'Edit Category' : 'Add Category'
+  document.getElementById('cat2-delete-btn').classList.toggle('hidden', !editId)
+
+  const selectIcon = (icon) => {
+    document.querySelectorAll('#cat2-icon-picker .icon-opt').forEach(b=>b.classList.toggle('on', b.dataset.i===icon))
+    document.getElementById('cat2-icon').value = icon
+  }
+
+  if (editId) {
+    const c = S.categories.find(x=>x.id===editId)
+    document.getElementById('cat2-name').value  = c.name
+    document.getElementById('cat2-limit').value = c.monthly_limit||''
+    selectIcon(c.icon||'🛒')
+  } else {
+    document.getElementById('cat2-name').value=''
+    document.getElementById('cat2-limit').value=''
+    selectIcon('🛒')
+  }
+  document.getElementById('cat2-overlay').classList.remove('hidden')
+  setTimeout(()=>document.getElementById('cat2-name').focus(),100)
+}
+
+async function saveCategory2() {
+  const id    = document.getElementById('cat2-id').value
+  const name  = document.getElementById('cat2-name').value.trim()
+  const icon  = document.getElementById('cat2-icon').value||'🛒'
+  const limit = parseFloat(document.getElementById('cat2-limit').value)||0
+  if (!name) return showAlert('cat2-alert','Enter a category name','error')
+  const payload = { name, icon, monthly_limit:limit }
+  let err
+  if (id) ({ error:err }=await db.from('spending_categories').update(payload).eq('id',id))
+  else    ({ error:err }=await db.from('spending_categories').insert({...payload,user_id:S.effectiveUserId}))
+  if (err) return showAlert('cat2-alert',err.message,'error')
+  closeOverlay('cat2-overlay')
+  const { data }=await db.from('spending_categories').select('*').order('created_at'); S.categories=data??[]
+  renderSpending()
+}
+
+async function deleteCategory2() {
+  const id = document.getElementById('cat2-id').value
+  if (!id) return
+  if (!confirm('Delete this category? Expenses logged under it will also be deleted.')) return
+  await db.from('spending_categories').delete().eq('id',id)
+  S.categories=S.categories.filter(c=>c.id!==id)
+  S.expenses=S.expenses.filter(e=>e.category_id!==id)
+  closeOverlay('cat2-overlay')
+  renderSpending()
+}
+
+function openExpenseModal(catId) {
+  if (!S.categories.length) { openCategoryModal(); return }
+  clearAlert('exp-alert')
+  const sel = document.getElementById('exp-cat')
+  sel.innerHTML = S.categories.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')
+  if (catId) sel.value = catId
+  document.getElementById('exp-amount').value = ''
+  document.getElementById('exp-desc').value = ''
+  document.getElementById('exp-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('exp-overlay').classList.remove('hidden')
+  setTimeout(()=>document.getElementById('exp-amount').focus(),100)
+}
+
+async function saveExpense() {
+  const catId  = document.getElementById('exp-cat').value
+  const amount = parseFloat(document.getElementById('exp-amount').value)
+  const desc   = document.getElementById('exp-desc').value.trim()
+  const date   = document.getElementById('exp-date').value
+  if (!catId) return showAlert('exp-alert','Choose a category','error')
+  if (!amount || amount<=0) return showAlert('exp-alert','Enter a valid amount','error')
+  if (!date) return showAlert('exp-alert','Select a date','error')
+  const payload = { category_id:catId, amount, description:desc||null, expense_date:date, user_id:S.effectiveUserId }
+  const { error:err } = await db.from('expenses').insert(payload)
+  if (err) return showAlert('exp-alert',err.message,'error')
+  closeOverlay('exp-overlay')
+  const { data }=await db.from('expenses').select('*').order('expense_date',{ascending:false}); S.expenses=data??[]
+  renderSpending()
+}
+
+async function delExpense(id) {
+  if (!confirm('Delete this expense?')) return
+  await db.from('expenses').delete().eq('id',id)
+  S.expenses=S.expenses.filter(e=>e.id!==id)
+  renderSpending()
+}
+
+// ── Debt Payoff Tracker ───────────────────────────
+let debtExtra = 0
+
+// Months to pay off a single balance at a fixed monthly payment (amortization)
+function debtMonthsToPayoff(balance, apr, payment) {
+  balance=Number(balance)||0; apr=Number(apr)||0; payment=Number(payment)||0
+  if (balance<=0) return 0
+  if (payment<=0) return Infinity
+  const r = apr/100/12
+  if (r===0) return Math.ceil(balance/payment)
+  if (payment <= balance*r) return Infinity
+  return Math.ceil(Math.log(payment/(payment-balance*r)) / Math.log(1+r))
+}
+function debtPayoffDate(months) {
+  if (!isFinite(months)) return null
+  return new Date(NOW.getFullYear(), NOW.getMonth()+months, 1)
+}
+// Simulate paying off every debt together, sending any extra payment to the
+// highest-APR balance first (avalanche method) once its minimum is covered.
+function simulateDebts(debts, extra) {
+  const bals = debts.map(d=>({ balance:Number(d.balance)||0, apr:Number(d.apr)||0, pay:Number(d.min_payment)||0 }))
+  let months=0, totalInterest=0
+  const MAXM=600 // 50-year cap
+  while (bals.some(b=>b.balance>0.005) && months<MAXM) {
+    months++
+    bals.forEach(b=>{ if(b.balance>0.005){ const int=b.balance*(b.apr/100/12); b.balance+=int; totalInterest+=int } })
+    bals.forEach(b=>{ if(b.balance>0.005){ const pay=Math.min(b.pay,b.balance); b.balance-=pay } })
+    let extraLeft=Number(extra)||0
+    while (extraLeft>0.005) {
+      const target=bals.filter(b=>b.balance>0.005).sort((a,b)=>b.apr-a.apr)[0]
+      if(!target) break
+      const pay=Math.min(extraLeft,target.balance)
+      target.balance-=pay; extraLeft-=pay
+    }
+  }
+  return { months, totalInterest, payoffDate: months<MAXM ? debtPayoffDate(months) : null }
+}
+
+function renderDebts() {
+  const sumEl = document.getElementById('debts-summary')
+  const listEl = document.getElementById('debts-list')
+  if (!listEl) return
+
+  if (!S.debts.length) {
+    sumEl.innerHTML = ''
+    listEl.innerHTML = `<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No debts tracked yet.<br>Add a credit card or loan to see your balance and payoff timeline.</div><button class="btn btn-gray" style="margin:0 auto;max-width:220px;" onclick="openDebtModal()">+ Add Debt</button></div>`
+    return
+  }
+
+  const totalBalance = S.debts.reduce((s,d)=>s+Number(d.balance),0)
+  const totalMin     = S.debts.reduce((s,d)=>s+Number(d.min_payment),0)
+  const avgApr       = totalBalance>0 ? S.debts.reduce((s,d)=>s+Number(d.apr)*Number(d.balance),0)/totalBalance : 0
+
+  const base       = simulateDebts(S.debts, 0)
+  const withExtra  = simulateDebts(S.debts, debtExtra)
+  const interestSaved = Math.max(0, base.totalInterest - withExtra.totalInterest)
+  const monthsSaved   = Math.max(0, base.months - withExtra.months)
+
+  const fmtMY = d => d ? d.toLocaleDateString('en-US',{month:'long',year:'numeric'}) : '50+ years'
+
+  sumEl.innerHTML = `
+    <div class="dash-grid" style="margin-bottom:16px;">
+      <div class="dash-card dash-card-accent">
+        <div class="dash-label">Total Debt</div>
+        <div class="dash-value c-accent">$${fmt(totalBalance)}</div>
+        <div class="dash-sub">${S.debts.length} debt${S.debts.length!==1?'s':''} · avg ${avgApr.toFixed(1)}% APR</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">Minimum Payments</div>
+        <div class="dash-value">$${fmt(totalMin)}</div>
+        <div class="dash-sub">per month</div>
+      </div>
+    </div>
+    <div class="report-card">
+      <div class="report-title">Debt-Free Date</div>
+      <div class="stat-row"><span class="stat-label">At minimum payments</span><span class="stat-val">${fmtMY(base.payoffDate)}</span></div>
+      <div class="fg" style="margin:14px 0 4px;">
+        <label>Extra Monthly Payment (what-if)</label>
+        <div class="ipw"><span class="ipw-pre">$</span><input type="number" id="debt-extra-input" value="${debtExtra||''}" placeholder="0.00" min="0" step="10" inputmode="decimal" onchange="setDebtExtra(this.value)"></div>
+      </div>
+      ${debtExtra>0?`
+      <div class="stat-row"><span class="stat-label">With extra payment</span><span class="stat-val c-success">${fmtMY(withExtra.payoffDate)}</span></div>
+      <div class="stat-row"><span class="stat-label">Time saved</span><span class="stat-val c-success">${monthsSaved>0?Math.floor(monthsSaved/12)+'y '+(monthsSaved%12)+'m':'—'}</span></div>
+      <div class="stat-row"><span class="stat-label">Interest saved</span><span class="stat-val c-success">$${fmt(interestSaved)}</span></div>
+      `:''}
+    </div>`
+
+  const sorted = [...S.debts].sort((a,b)=>Number(b.apr)-Number(a.apr))
+  listEl.innerHTML = sorted.map(d=>{
+    const months = debtMonthsToPayoff(d.balance, d.apr, d.min_payment)
+    const payoff  = debtPayoffDate(months)
+    const payoffLabel = isFinite(months)
+      ? `Payoff: ${payoff.toLocaleDateString('en-US',{month:'short',year:'numeric'})} (${months} mo)`
+      : '⚠ Minimum payment too low to ever pay this off'
+    return `<div class="bucket-card">
+      <div class="bucket-header">
+        <div class="bucket-icon">${d.icon||'💳'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="bucket-name">${d.name}</div>
+          <div class="bucket-detail">${Number(d.apr).toFixed(2)}% APR · $${fmt(d.min_payment)}/mo min</div>
+        </div>
+        <div class="bucket-amounts">
+          <div class="bucket-saved" style="color:var(--danger);">$${fmt(d.balance)}</div>
+          <div class="bucket-goal">balance</div>
+        </div>
+      </div>
+      <div class="bucket-detail" style="margin-bottom:10px;${isFinite(months)?'':'color:var(--danger);'}">${payoffLabel}</div>
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+        <button class="btn btn-gray btn-sm" style="flex:1;" onclick="openDebtModal('${d.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteDebtById('${d.id}')">Delete</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function setDebtExtra(val) {
+  debtExtra = Math.max(0, parseFloat(val)||0)
+  renderDebts()
+}
+
+function setDebtIcon(btn) {
+  document.querySelectorAll('#debt-icon-picker .icon-opt').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  document.getElementById('debt-icon').value = btn.dataset.i
+}
+
+function openDebtModal(editId) {
+  clearAlert('debt-alert')
+  document.getElementById('debt-id').value = editId||''
+  document.getElementById('debt-modal-title').textContent = editId ? 'Edit Debt' : 'Add Debt'
+  document.getElementById('debt-delete-btn').classList.toggle('hidden', !editId)
+
+  const selectIcon = (icon) => {
+    document.querySelectorAll('#debt-icon-picker .icon-opt').forEach(b=>b.classList.toggle('on', b.dataset.i===icon))
+    document.getElementById('debt-icon').value = icon
+  }
+
+  if (editId) {
+    const d = S.debts.find(x=>x.id===editId)
+    document.getElementById('debt-name').value    = d.name
+    document.getElementById('debt-balance').value = d.balance||''
+    document.getElementById('debt-apr').value     = d.apr||''
+    document.getElementById('debt-min').value     = d.min_payment||''
+    selectIcon(d.icon||'💳')
+  } else {
+    document.getElementById('debt-name').value=''
+    document.getElementById('debt-balance').value=''
+    document.getElementById('debt-apr').value=''
+    document.getElementById('debt-min').value=''
+    selectIcon('💳')
+  }
+  document.getElementById('debt-overlay').classList.remove('hidden')
+  setTimeout(()=>document.getElementById('debt-name').focus(),100)
+}
+
+async function saveDebt() {
+  const id      = document.getElementById('debt-id').value
+  const name    = document.getElementById('debt-name').value.trim()
+  const icon    = document.getElementById('debt-icon').value||'💳'
+  const balance = parseFloat(document.getElementById('debt-balance').value)||0
+  const apr     = parseFloat(document.getElementById('debt-apr').value)||0
+  const minPay  = parseFloat(document.getElementById('debt-min').value)||0
+  if (!name) return showAlert('debt-alert','Enter a name for this debt','error')
+  if (balance<=0) return showAlert('debt-alert','Enter the current balance','error')
+  const payload = { name, icon, balance, apr, min_payment:minPay }
+  let err
+  if (id) ({ error:err }=await db.from('debts').update(payload).eq('id',id))
+  else    ({ error:err }=await db.from('debts').insert({...payload,user_id:S.effectiveUserId}))
+  if (err) return showAlert('debt-alert',err.message,'error')
+  closeOverlay('debt-overlay')
+  const { data }=await db.from('debts').select('*').order('created_at'); S.debts=data??[]
+  renderDebts()
+}
+
+async function deleteDebt() {
+  const id = document.getElementById('debt-id').value; if(id) await deleteDebtById(id,true)
+}
+async function deleteDebtById(id,fromModal=false) {
+  if (!confirm('Delete this debt?')) return
+  await db.from('debts').delete().eq('id',id)
+  S.debts=S.debts.filter(d=>d.id!==id)
+  if(fromModal) closeOverlay('debt-overlay')
+  renderDebts()
+}
+
 // ── Assignment engine ─────────────────────────────
 function addD(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
 function addM(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x }
@@ -1755,7 +2384,7 @@ function dueDates(bill,start,end){
     if(freq==='weekly')    { d=new Date(start); d.setDate(d.getDate()+step*7) }
     else if(freq==='biweekly') { d=new Date(start); d.setDate(d.getDate()+step*14) }
     else if(freq==='quarterly') { const qm=m+step*3; d=new Date(y+Math.floor(qm/12),qm%12,Math.min(bill.due_day,new Date(y+Math.floor(qm/12),qm%12+1,0).getDate())) }
-    else if(freq==='annually')  { d=new Date(y+step,m,Math.min(bill.due_day,new Date(y+step,m+1,0).getDate())) }
+    else if(freq==='annually')  { const am=(bill.due_month?bill.due_month-1:m); d=new Date(y+step,am,Math.min(bill.due_day,new Date(y+step,am+1,0).getDate())) }
     else { // monthly
       const tm=m+step; d=new Date(y+Math.floor(tm/12),tm%12,Math.min(bill.due_day,new Date(y+Math.floor(tm/12),tm%12+1,0).getDate()))
     }
@@ -1968,10 +2597,12 @@ async function saveReminderSettings() {
 function fmt(n){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function ordinal(n){ const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]) }
 const FREQ_BADGE = { weekly:'Weekly', biweekly:'Every 2 wks', monthly:'Monthly', quarterly:'Quarterly', annually:'Annually' }
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 function billMeta(b){
   if(b.bill_type==='single'&&b.due_date){ const d=new Date(b.due_date+'T00:00:00'); return `One-time · Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · ${b.category}` }
   const freq=b.bill_frequency||'monthly'
   const freqLabel=FREQ_BADGE[freq]||freq
+  if(freq==='annually'&&b.due_month) return `${freqLabel} · Due ${MONTH_NAMES[b.due_month-1]} ${ordinal(b.due_day)} · ${b.category}`
   return `${freqLabel} · Due the ${ordinal(b.due_day)} · ${b.category}`
 }
 function showAlert(id,msg,type){ const el=document.getElementById(id); el.className=`alert alert-${type}`; el.textContent=msg; el.classList.remove('hidden') }
