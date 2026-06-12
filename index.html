@@ -119,6 +119,14 @@
     /* ── Tab strip ── */
     .tab-strip{background:var(--surface);border-bottom:2px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:57px;z-index:20}
     .tab-strip::-webkit-scrollbar{display:none}
+    /* Show a slim themed scrollbar on desktop (mouse + hover) so it's clear the tab bar scrolls */
+    @media (hover:hover) and (pointer:fine) {
+      .tab-strip{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+      .tab-strip::-webkit-scrollbar{display:block;height:5px}
+      .tab-strip::-webkit-scrollbar-track{background:transparent}
+      .tab-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+      .tab-strip::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+    }
     .tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:700;flex-shrink:0;transition:all .15s;background:none;border-left:none;border-right:none;border-top:none;text-transform:uppercase;letter-spacing:.4px}
     .tab-item.on{color:var(--navy);border-bottom-color:var(--accent)}
     .tab-item svg{width:18px;height:18px}
