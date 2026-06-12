@@ -970,6 +970,7 @@
     <p id="reassign-bill-name" style="font-weight:700;font-size:16px;margin-bottom:6px;"></p>
     <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Choose which paycheck should cover this bill:</p>
     <input type="hidden" id="reassign-bill-id">
+    <input type="hidden" id="reassign-due-date">
     <div id="reassign-options"></div>
     <button class="btn btn-gray" style="margin-top:10px;" onclick="clearReassign()">Reset to Auto</button>
     <button class="btn btn-gray" style="margin-top:8px;" onclick="closeOverlay('reassign-overlay')">Cancel</button>
@@ -1093,6 +1094,24 @@ function getMonthPaychecks(refY, refM, mo=4) {
   if (!S.schedules.length) return []
   const allPc = S.schedules.flatMap(s => genPayDates(s, mo)); allPc.sort((a,b)=>a.date-b.date)
   return allPc.filter(p=>p.date.getFullYear()===refY && p.date.getMonth()===refM)
+}
+
+// "Move this bill" candidate paychecks for a given due date: the paycheck
+// immediately before the due date's month starts, every paycheck IN that
+// month, and the paycheck immediately after that month ends. A recurring
+// assignment's paycheck_index is a 1-based index into THIS list, so index 1
+// always means "step back to the last paycheck of the previous month" no
+// matter which calendar month a bill happens to be due in — that's what
+// lets a recurring move to an EARLIER paycheck (a different calendar month)
+// keep working correctly every month, for every occurrence.
+function candidatesForDue(dueDate) {
+  if (!S.schedules.length) return []
+  const all = S.schedules.flatMap(s => genPayDates(s, 12)); all.sort((a,b)=>a.date-b.date)
+  const y = dueDate.getFullYear(), m = dueDate.getMonth()
+  const monthPcs = all.filter(p=>p.date.getFullYear()===y && p.date.getMonth()===m)
+  const before = [...all].reverse().find(p => monthPcs.length ? p.date < monthPcs[0].date : p.date < dueDate)
+  const after = all.find(p => monthPcs.length ? p.date > monthPcs[monthPcs.length-1].date : p.date > dueDate)
+  return [before, ...monthPcs, after].filter(Boolean)
 }
 
 // ── Boot ──────────────────────────────────────────
@@ -1244,13 +1263,12 @@ function renderPaychecks() {
 
   // All paychecks for this month, in date order — index+1 is each
   // paycheck's 1-based "Nth paycheck of the month" position. Used to
-  // look up category allowances AND recurring bill reassignments
-  // ("always put this bill on the Nth paycheck of the month, every month").
+  // look up category allowances for this month.
   const monthPcs = getMonthPaychecks(refY, refM, pcPage+4)
 
   // Assign only REF-MONTH bill occurrences to paychecks
   // This means each bill appears exactly once, assigned to whatever paycheck covers it
-  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc, refMY, monthPcs)
+  const allGroups = applyOverrides(assignForMonth(sortedBills, allPc, refY, refM, S.strategy), allPc)
 
   const inM = (g,y,m) => g.paycheck.date.getFullYear()===y && g.paycheck.date.getMonth()===m
   // Only show current month's paychecks. Bills due early next month that step back
@@ -1334,7 +1352,7 @@ function renderPaychecks() {
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <div class="pc-bill-amt">$${fmt(ab.amount)}</div>
           <button class="reassign-btn" onclick="openAmountOverride('${ab.bill.id}','${abMY}')" title="Use a different amount this month">✎</button>
-          <button class="reassign-btn" onclick="openReassign('${ab.bill.id}','${ab.bill.name}','${g.paycheck.dateStr}')" title="Move to different paycheck">↔</button>
+          <button class="reassign-btn" onclick="openReassign('${ab.bill.id}','${ab.bill.name}','${g.paycheck.dateStr}','${dStr(ab.dueDate)}')" title="Move to different paycheck">↔</button>
         </div>
       </div>`
     }).join('')
@@ -2081,25 +2099,20 @@ function smartAssign(bills, paychecks, mo) {
 }
 
 // ── Apply manual overrides ────────────────────────
-// Two layers of "move bill" overrides, combined into one map:
-//  1. Recurring (bill_recurring_assignments) — "always put this bill on
-//     the Nth paycheck of the month" (paycheck_index), applied to every
-//     month via monthPcs for whichever month is being viewed.
-//  2. One-time (bill_assignments) — applies only to its specific
-//     month_year and, if present, overrides the recurring default for
-//     that one month only.
-function applyOverrides(groups, allPc, refMY, monthPcs) {
-  const overrideMap = new Map()
-  for (const ra of S.recurringAssignments) {
-    const pc = monthPcs[ra.paycheck_index - 1]
-    if (pc) overrideMap.set(ra.bill_id, pc.dateStr)
-  }
-  for (const o of S.overrides) {
-    if (o.month_year === refMY) overrideMap.set(o.bill_id, o.paycheck_date)
-  }
-  if (!overrideMap.size) return groups
+// Two layers of "move bill" overrides, applied PER OCCURRENCE — so a
+// recurring bill's June, July, and August due dates are each considered
+// separately, and moving July's occurrence never touches June's or
+// August's (the bug this replaced moved whichever occurrence happened to
+// be found first, by bill_id alone):
+//  1. One-time (bill_assignments) — applies only to an occurrence whose
+//     due date falls in its specific month_year; highest precedence.
+//  2. Recurring (bill_recurring_assignments) — "always put this bill on
+//     candidate position N relative to the month it's due in" (see
+//     candidatesForDue), applied to every occurrence of that bill.
+function applyOverrides(groups, allPc) {
+  if (!S.recurringAssignments.length && !S.overrides.length) return groups
 
-  // Deep clone groups
+  // Deep clone groups so occurrences can be moved between them freely
   const newGroups = groups.map(g=>({
     paycheck:g.paycheck,
     bills:[...g.bills],
@@ -2107,23 +2120,33 @@ function applyOverrides(groups, allPc, refMY, monthPcs) {
     remaining:g.remaining,
   }))
 
-  for(const [billId, targetDate] of overrideMap) {
-    const bill = S.bills.find(b=>b.id===billId)
-    if (!bill) continue
-    // Remove from current group
-    let moved = null
-    for(const g of newGroups) {
-      const idx = g.bills.findIndex(ab=>ab.bill.id===billId)
-      if (idx !== -1) {
-        moved = g.bills[idx]
-        g.bills.splice(idx,1); g.totalBills-=moved.amount; g.remaining+=moved.amount
-        break
+  // Flatten every placed occurrence with a reference to its current group,
+  // so each one is checked/moved independently of other occurrences of the
+  // same bill.
+  const occs = []
+  for (const g of newGroups) for (const ab of g.bills) occs.push({ab, from:g})
+
+  for (const {ab, from} of occs) {
+    const occMY = ymKey(ab.dueDate)
+    let targetDate = null
+
+    const oneTime = S.overrides.find(o=>o.bill_id===ab.bill.id && o.month_year===occMY)
+    if (oneTime) {
+      targetDate = oneTime.paycheck_date
+    } else {
+      const ra = S.recurringAssignments.find(r=>r.bill_id===ab.bill.id)
+      if (ra) {
+        const pc = candidatesForDue(ab.dueDate)[ra.paycheck_index - 1]
+        if (pc) targetDate = pc.dateStr
       }
     }
-    // Add to target group — if the target paycheck currently has zero
-    // bills, assignForMonth() will have dropped it entirely, so create a
-    // placeholder group for it here (using allPc, which includes every
-    // paycheck regardless of bill count).
+
+    if (!targetDate || targetDate === from.paycheck.dateStr) continue
+
+    // Find (or create) the target group — if the target paycheck currently
+    // has zero bills, assignForMonth() will have dropped it entirely, so
+    // create a placeholder group for it here (using allPc, which includes
+    // every paycheck regardless of bill count).
     let target = newGroups.find(g=>g.paycheck.dateStr===targetDate)
     if (!target) {
       const targetPc = allPc.find(p=>p.dateStr===targetDate)
@@ -2132,25 +2155,26 @@ function applyOverrides(groups, allPc, refMY, monthPcs) {
         newGroups.push(target)
       }
     }
-    if (target) {
-      const today=new Date(); today.setHours(0,0,0,0)
-      const dueDate = moved ? moved.dueDate : (dueDates(bill,today,addM(today,3))[0] || target.paycheck.date)
-      const amount = moved ? moved.amount : billAmount(bill, ymKey(dueDate))
-      target.bills.push({bill,dueDate,amount}); target.totalBills+=amount; target.remaining-=amount
-    }
+    if (!target) continue
+
+    const idx = from.bills.indexOf(ab)
+    from.bills.splice(idx,1); from.totalBills-=ab.amount; from.remaining+=ab.amount
+    target.bills.push(ab); target.totalBills+=ab.amount; target.remaining-=ab.amount
   }
+
   newGroups.forEach(g => g.bills.sort((a,b)=>a.dueDate-b.dueDate))
   newGroups.sort((a,b)=>a.paycheck.date-b.paycheck.date)
   return newGroups
 }
 
 // ── Reassign ──────────────────────────────────────
-function openReassign(billId, billName, currentDate) {
+function openReassign(billId, billName, currentDate, dueDate) {
   document.getElementById('reassign-bill-id').value = billId
+  document.getElementById('reassign-due-date').value = dueDate
   document.getElementById('reassign-bill-name').textContent = billName
   const allPc = S.schedules.flatMap(s=>genPayDates(s,3)).sort((a,b)=>a.date-b.date)
   document.getElementById('reassign-options').innerHTML = allPc.map(p=>`
-    <div class="reassign-option ${p.dateStr===currentDate?'active':''}" onclick="saveReassign('${billId}','${p.dateStr}')">
+    <div class="reassign-option ${p.dateStr===currentDate?'active':''}" onclick="saveReassign('${billId}','${p.dateStr}','${dueDate}')">
       <div>
         <div class="reassign-option-date">${p.label}</div>
         <div class="reassign-option-meta">${p.schedName||''}</div>
@@ -2160,14 +2184,19 @@ function openReassign(billId, billName, currentDate) {
   document.getElementById('reassign-overlay').classList.remove('hidden')
 }
 
-// Moving a bill sets it to recur on that same "Nth paycheck of the month"
-// every month going forward (until reset). We figure out N from the
-// paycheck the user picked, then save it as the bill's recurring default.
-async function saveReassign(billId, paycheckDate) {
+// Moving a bill sets it to recur on that same relative position every
+// month going forward (until reset): we figure out the picked paycheck's
+// position in candidatesForDue(dueDate) — the list of paychecks "around"
+// the due date's month (incl. the step-back/step-forward paycheck from
+// adjacent months) — and save THAT as the bill's recurring paycheck_index.
+// Because candidatesForDue() is built the same way for every occurrence's
+// due month, this keeps working correctly across months, including moves
+// to an earlier paycheck that falls in the previous calendar month.
+async function saveReassign(billId, paycheckDate, dueDateStr) {
   closeOverlay('reassign-overlay')
-  const [py,pm] = paycheckDate.split('-').map(Number)
-  const monthPcs = getMonthPaychecks(py, pm-1)
-  const paycheckIndex = monthPcs.findIndex(p=>p.dateStr===paycheckDate) + 1
+  const dueDate = dueDateStr ? parseD(dueDateStr) : parseD(paycheckDate)
+  const candidates = candidatesForDue(dueDate)
+  const paycheckIndex = candidates.findIndex(p=>p.dateStr===paycheckDate) + 1
   if (!paycheckIndex) { alert('Could not save: paycheck not found'); return }
   const { error } = await db.from('bill_recurring_assignments').upsert(
     { user_id:S.effectiveUserId, bill_id:billId, paycheck_index:paycheckIndex },
